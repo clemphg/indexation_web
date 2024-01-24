@@ -14,4 +14,3 @@ if __name__=="__main__":
 
     write_urls(urls, "test.txt")
 
-
