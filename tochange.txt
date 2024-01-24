@@ -1,0 +1,9 @@
+
+
+robot parser as attribute to avoid changing it often
+
+class Crawler:
+
+is crawlable
+scan one page
+crawl
