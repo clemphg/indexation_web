@@ -1,5 +1,5 @@
 
-from functions import scan_links_in_page, write_urls
+from crawler import Crawler
 
 def main():
     pass
@@ -7,10 +7,13 @@ def main():
 if __name__=="__main__":
 
     start_url = 'https://ensai.fr/'
-    urls = scan_links_in_page(start_url)
+
+    crawler = Crawler(start_url)
+
+    urls = crawler.scan_links_in_page(start_url)
 
     print(len(urls))
     # 220 with robots.txt
 
-    write_urls(urls, "test.txt")
+    crawler.write_visited_urls("test.txt")
 
