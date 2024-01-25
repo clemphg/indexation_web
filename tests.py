@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 from urllib.request import urlopen
 
-base_url = "https://www.facebook.com/Ensai35/"
+base_url = "https://www.facebook.com/mabanque.bnpparibas"
 parsed_url = urlparse(base_url)
 home_page_url = parsed_url.scheme+'://'+parsed_url.netloc
 

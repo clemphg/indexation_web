@@ -3,17 +3,32 @@ import time
 
 from bs4 import BeautifulSoup
 
-import ssl
 from urllib.request import urlopen
 from urllib.error import URLError
 from urllib.robotparser import RobotFileParser
 
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 
-class Crawler():
+class MinimalCrawler():
 
     def __init__(self, start_url, max_urls_crawled=50, max_urls_per_page=5, crawl_delay=5, robot_delay=3):
+        """
+        Attributes
+        ----------
+        seed: url
+            Start url for the crawler
+        max_urls_crawled: int
+            Maximum number of distinct urls to crawl
+        max_urls_per_page: int
+            Maximum number of urls to crawl from each page
+        crawl_delay: int
+            Time in seconds to wait for before crawling another page
+        robot_delay: int
+            Time in seconds to wait before interrogating another /robots.txt (politeness)
+        rp: RobotFileParser
+            Parser for /robots.txt files
+        """
         self.seed = start_url
 
         self.max_urls_crawled = max_urls_crawled
@@ -37,14 +52,23 @@ class Crawler():
     
     def scan_links_in_page(self, page_url):
         """Scans page for outgoing links
-        Returns self.max_urls_per_page links of less which can be crawled."""
+        Returns self.max_urls_per_page links of less which can be crawled.
+        
+        Parameter
+        ---------
+        page_url: str
+            Url of the page to crawl
+        
+        Returns
+        -------
+        tuple(boolean, list)
+            First element is True if no exceptions were raised, and in this case the list contains 
+            at most self.max_urls_per_page urls.
+            If first element is False, then the results list is empty
+        """
         try:
-            # Create an SSL context with custom settings
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
 
-            with urlopen(page_url, context=ssl_context) as response:
+            with urlopen(page_url) as response:
                 html = response.read()
             soup = BeautifulSoup(html, 'html.parser')
 
@@ -64,17 +88,28 @@ class Crawler():
 
                 tested_outgoing_links+=1
 
-            return links_selection
+            return True, links_selection
 
 
         except URLError as e:
             print(f"Error opening the URL: {e}")
-            return []
+            return False, []
 
 
     
     def is_crawlable(self, page_url):
-        """True if url page is crawlable, False otherwise"""
+        """Checks if a page can be crawled by interrogating the /robots.txt file of the website.
+        
+        Parameter
+        ---------
+        page_url: str
+            Url of the page to check
+
+        Returns
+        -------
+        boolean
+            True if page is crawlable, False otherwise
+        """
         parsed_url = urlparse(page_url)
         home_page_url = parsed_url.scheme+'://'+parsed_url.netloc
 
@@ -84,6 +119,9 @@ class Crawler():
         return self.rp.can_fetch("*", page_url)
 
     def crawl(self):
+        """
+        Crawls from the given seed (start url)        
+        """
         to_crawl = [self.seed]
         crawled = set()
 
@@ -92,19 +130,19 @@ class Crawler():
             # we will crawl the first url from the to_crawl list
             current_url = to_crawl.pop(0)
 
-            print("Current url:", current_url)
+            print(f"[{len(crawled)+1}/{self.max_urls_crawled}] | {current_url}")
 
-            # to crawl or not to crawl
+            # we do not crawl an already crawled page
             if current_url in crawled:
+                print("Page already crawled. Testing another page...")
                 continue
 
-            outgoing_links = self.scan_links_in_page(current_url)
-            to_crawl.extend(outgoing_links)
+            response = self.scan_links_in_page(current_url)
+            if response[0]: # if the page has been scanned and the links retrieved (no exception raised)
+                outgoing_links = response[1]
+                to_crawl.extend(outgoing_links)
 
-            crawled.add(current_url)
-
-            if len(crawled)%1==0:
-                print(f"{len(crawled)} crawled")
+                crawled.add(current_url)
 
             time.sleep(self.crawl_delay)
             

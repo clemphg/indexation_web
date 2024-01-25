@@ -1,9 +1,7 @@
-# TP d'indexation web - ENSAI 2024
+# TP d'indexation web [Crawler] - ENSAI 2024
 Clémentine Phung - clementine.phung-ngoc@eleve.ensai.fr
 
-Ce `README.md` est destiné à la compréhension de l'ensemble des TP. Dans chacun des trois dossiers, vous trouverez un `README.md` correspondant au TP en question.
-
-## TP1 : Crawler
+Ce `README.md` correspond au TP1 sur les crawlers.
 
 ### Librairies utilisées
 
