@@ -1,4 +1,4 @@
-from urllib.robotparser import RobotFileParser
+from protego import Protego
 from urllib.parse import urlparse, urlunparse
 import os
 import time
@@ -22,9 +22,13 @@ outgoing_links = [a['href'] for a in soup.find_all('a', href=True) if not a['hre
 
 
 
-rp = RobotFileParser()
-rp.set_url(os.path.join(home_page_url,"robots.txt"))
-rp.read()
+rp = Protego()
+
+
+with urlopen(os.path.join(home_page_url,"robots.txt")) as response:
+    robots_txt_content = response.read().decode("utf-8")
+
+rp.parse(robots_txt_content)
 
 outgoing_links_ok = []
 
@@ -34,11 +38,12 @@ for link in outgoing_links:
         time.sleep(3)
 
 # remove contents of destination text file
-open('robotfileparser.txt', "w").close()
+open('protego.txt', "w").close()
 
         # write urls in filename
-with open('robotfileparser.txt', 'a') as file:
+with open('protego.txt', 'a') as file:
     for url in outgoing_links_ok:
         file.write(url + '\n')
 
 print(len(outgoing_links_ok))
+
