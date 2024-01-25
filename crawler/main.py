@@ -1,6 +1,6 @@
 
-from crawler.minimalcrawler import MinimalCrawler
-
+from minimalcrawler import MinimalCrawler
+from crawler import Crawler
 
 
 def main():
@@ -10,7 +10,9 @@ def main():
 if __name__=="__main__":
 
     start_url = 'https://ensai.fr/'
-    crawler = MinimalCrawler(start_url, 20)
+    #mincrawler = MinimalCrawler(start_url, 20)
 
-    crawler.crawl()
+    #mincrawler.crawl()
 
+    crawler = Crawler(start_url, 10)
+    crawler.crawl('test.txt')
