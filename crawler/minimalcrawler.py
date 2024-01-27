@@ -10,6 +10,7 @@ from urllib.robotparser import RobotFileParser
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
+import http.client
 
 
 class MinimalCrawler():
@@ -28,8 +29,6 @@ class MinimalCrawler():
             Time in seconds to wait for before crawling another page
         robot_delay: int
             Time in seconds to wait before interrogating another /robots.txt (politeness)
-        rp: RobotFileParser
-            Parser for /robots.txt files
         """
         self.seed = start_url
 
@@ -39,9 +38,7 @@ class MinimalCrawler():
         self.crawl_delay = crawl_delay  # seconds
         self.robot_delay = robot_delay  # seconds
 
-        self.rp = RobotFileParser(self.seed)
-
-    def write_visited_urls(self, urls, filename='crawled_webpages.txt'):
+    def write_visited_urls(self, urls, filename='crawler/crawled_webpages.txt'):
 
         # remove contents of destination text file
         open(filename, "w", encoding='utf-8').close()
@@ -114,10 +111,15 @@ class MinimalCrawler():
         parsed_url = urlparse(page_url)
         home_page_url = parsed_url.scheme+'://'+parsed_url.netloc
 
-        self.rp.set_url(os.path.join(home_page_url, "robots.txt"))
-        self.rp.read()
+        rp = RobotFileParser()
+        rp.set_url(os.path.join(home_page_url, "robots.txt"))
 
-        return self.rp.can_fetch("*", page_url)
+        try: 
+            rp.read()
+            return rp.can_fetch("*", page_url)
+        except http.client.BadStatusLine as e:
+            print(f"BadStatusLine error: {e}")
+            return False
 
     def crawl(self):
         """
