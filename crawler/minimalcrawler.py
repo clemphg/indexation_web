@@ -146,13 +146,13 @@ class MinimalCrawler():
             print(f"BadStatusLine error: {e}")
             return False
 
-    def crawl(self, path='/crawler/', filename='crawled_webpages.txt'):
+    def crawl(self, path='/', filename='crawled_webpages.txt'):
         """Crawls from the given seed (start url).
 
         Parameters
         ----------
         path: str
-            Path to folder in which the file will be saved, default = '/crawler/'.
+            Path to folder in which the file will be saved, default = '/'.
         filename: str
             Name of file containing the URLs, default = 'crawled_webpages.txt'.
 
