@@ -10,9 +10,9 @@ def main():
 if __name__=="__main__":
 
     start_url = 'https://ensai.fr/'
-    mincrawler = MinimalCrawler(start_url, 50)
+    
+    #mincrawler = MinimalCrawler(start_url)
+    #mincrawler.crawl(path='/crawler')
 
-    mincrawler.crawl(path='/crawler')
-
-    #crawler = Crawler(start_url, 10)
-    #crawler.crawl('test.txt')
+    crawler = Crawler(start_url, 10)
+    crawler.crawl('test.txt')

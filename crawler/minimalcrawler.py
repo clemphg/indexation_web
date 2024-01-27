@@ -19,17 +19,17 @@ class MinimalCrawler():
         """
         Attributes
         ----------
-        seed: url
+        __seed: url
             Start url for the crawler.
-        max_urls_crawled: int
+        __max_urls_crawled: int
             Maximum number of distinct urls to crawl, default = 50.
-        max_urls_per_page: int
+        __max_urls_per_page: int
             Maximum number of urls to crawl from each page, default = 5.
-        crawl_delay: int
+        __crawl_delay: int
             Time in seconds to wait for before crawling another page, default = 5.
-        robot_delay: int
+        __robot_delay: int
             Time in seconds to wait before interrogating another /robots.txt (politeness), default = 3.
-        self.__timeout_seconds: int
+        __timeout_seconds: int
             Time in seconds to try to fetch an url, default = 5.
         """
         self.__seed = start_url
@@ -58,10 +58,10 @@ class MinimalCrawler():
         None
         """
         # remove content of destination text file
-        open(filename, "w", encoding='utf-8').close()
+        open(os.path.join(path,filename), "w", encoding='utf-8').close()
 
         # write urls in file
-        with open(os.join.path(path,filename), 'a') as file:
+        with open(os.path.join(path,filename), 'a') as file:
             for url in urls:
                 file.write(url + '\n')
 

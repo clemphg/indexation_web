@@ -9,45 +9,59 @@ from urllib.error import URLError
 from urllib.robotparser import RobotFileParser
 
 from urllib.parse import urlparse
+import http.client
 
 
 class Crawler():
 
-    def __init__(self, start_url, max_urls_crawled=50, max_urls_per_page=5, crawl_delay=5, robot_delay=3):
+    def __init__(self, start_url, max_urls_crawled=50, max_urls_per_page=5, crawl_delay=5, robot_delay=3, timeout_delay=5):
         """
         Attributes
         ----------
-        seed: url
+        __seed: url
             Start url for the crawler
-        max_urls_crawled: int
+        __max_urls_crawled: int
             Maximum number of distinct urls to crawl
-        max_urls_per_page: int
+        __max_urls_per_page: int
             Maximum number of urls to crawl from each page
-        crawl_delay: int
+        __crawl_delay: int
             Time in seconds to wait for before crawling another page
-        robot_delay: int
+        __robot_delay: int
             Time in seconds to wait before interrogating another /robots.txt (politeness)
-        rp: RobotFileParser
-            Parser for /robots.txt files
+        __timeout_seconds: int
+            Time in seconds to try to fetch an url, default = 5.
         """
-        self.seed = start_url
+        self.__seed = start_url
 
-        self.max_urls_crawled = max_urls_crawled
-        self.max_urls_per_page = max_urls_per_page
+        self.__max_urls_crawled = max_urls_crawled
+        self.__max_urls_per_page = max_urls_per_page
 
-        self.crawl_delay = crawl_delay # seconds
-        self.robot_delay = robot_delay # seconds
-
-        self.rp = RobotFileParser(self.seed)
+        self.__crawl_delay = crawl_delay # seconds
+        self.__robot_delay = robot_delay # seconds
+        self.__timeout_delay = timeout_delay # seconds
     
 
-    def write_visited_urls(self, urls, filename):
+    def write_visited_urls(self, urls, path, filename):
+        """Writes list of urls into a file
 
-        # remove contents of destination text file
-        open(filename, "w").close()
+        Parameters
+        ----------
+        urls: list[str]
+            List of URLs.
+        path: str
+            Path to folder in which the file will be saved.
+        filename: str
+            Name of file containing the URLs.
+        
+        Returns
+        -------
+        None
+        """
+        # remove content of destination text file
+        open(os.path.join(path,filename), "w", encoding='utf-8').close()
 
-        # write urls in filename
-        with open(filename, 'a') as file:
+        # write urls in file
+        with open(os.path.join(path,filename), 'a') as file:
             for url in urls:
                 file.write(url + '\n')
     
@@ -68,7 +82,7 @@ class Crawler():
         """
         try:
 
-            with urlopen(page_url) as response:
+            with urlopen(page_url, timeout=self.__timeout_delay) as response:
                 html = response.read()
             soup = BeautifulSoup(html, 'html.parser')
 
@@ -82,47 +96,71 @@ class Crawler():
         except URLError as e:
             print(f"Error opening the URL: {e}")
             return False, []
-
+        except TimeoutError:
+            print(f"Timeout occurred. Connection timed out after {self.timeout_seconds} seconds.")
+            return False, []
 
     
     def is_crawlable(self, page_url):
         """Checks if a page can be crawled by interrogating the /robots.txt file of the website.
-        
+
         Parameter
         ---------
         page_url: str
-            Url of the page to check
+            URL of the page to check.
 
         Returns
         -------
         boolean
-            True if page is crawlable, False otherwise
+            True if page is crawlable, False otherwise1;
         """
-        parsed_url = urlparse(page_url)
-        home_page_url = parsed_url.scheme+'://'+parsed_url.netloc
+        # parsing the url to retrieve the home page url
+        try:
+            parsed_url = urlparse(page_url)
+            home_page_url = parsed_url.scheme+'://'+parsed_url.netloc
 
-        self.rp.set_url(os.path.join(home_page_url,"robots.txt"))
-        self.rp.read()
+            # instanciating the robots.txt file parser
+            rp = RobotFileParser()
+            rp.set_url(os.path.join(home_page_url, "robots.txt"))
 
-        return self.rp.can_fetch("*", page_url)
+            try: 
+                rp.read()
+                # returns True if page is crawlable, False otherwise
+                return rp.can_fetch("*", page_url)
+            except http.client.BadStatusLine as e:
+                print(f"BadStatusLine error: {e}")
+                return False
+        except URLError as e:
+            print(f"URLError: {e}")
+            return False
 
-    def crawl(self, filename='crawled_webpages.txt'):
+    def crawl(self,  path='/', filename='crawled_webpages.txt'):
+        """Crawls from the given seed (start url).
+
+        Parameters
+        ----------
+        path: str
+            Path to folder in which the file will be saved, default = '/'.
+        filename: str
+            Name of file containing the URLs, default = 'crawled_webpages.txt'.
+
+        Returns
+        -------
+        None
         """
-        Crawls from the given seed (start url)        
-        """
-        to_crawl = [self.seed]
-        crawled = set()
+        to_crawl = [self.__seed] # frontier
+        crawled = set() # parsed URLs
 
-        while to_crawl and len(crawled)<self.max_urls_crawled:
+        while to_crawl and len(crawled)<self.__max_urls_crawled:
 
-            # we will crawl the first url from the to_crawl list
-            current_url = to_crawl.pop(0)
+            # we will crawl the first url from the to_crawl list (frontier)
+            current_url = to_crawl.pop(0) 
 
-            print(f"[{len(crawled)+1}/{self.max_urls_crawled}] | {current_url}")
+            print(f"[{len(crawled)+1}/{self.__max_urls_crawled}] {current_url}")
 
             # we do not crawl an already crawled page
             if current_url in crawled:
-                print("Page already crawled. Testing another page...")
+                print("Page already crawled. Moving on...")
                 continue
 
             outgoing_links = self.get_links_one_page(current_url)
@@ -130,20 +168,21 @@ class Crawler():
                 to_crawl.extend(outgoing_links)
                 crawled.add(current_url)
 
-            time.sleep(self.crawl_delay)
+            time.sleep(self.__crawl_delay)
             
         # write results
-        self.write_visited_urls(list(crawled), filename)
+        self.write_visited_urls(list(crawled), path, filename)
     
     def get_sitemaps(self, url):
         """Get sitemaps from a website, returns None if not sitemap is exposed"""
 
         parsed_url = urlparse(url)
         home_page_url = parsed_url.scheme+'://'+parsed_url.netloc
-        self.rp.set_url(os.path.join(home_page_url,"robots.txt"))
-        self.rp.read()
+        rp = RobotFileParser()
+        rp.set_url(os.path.join(home_page_url,"robots.txt"))
+        rp.read()
 
-        return self.rp.site_maps() # None if no sitemaps
+        return rp.site_maps() # None if no sitemaps
 
     def scan_sitemap(self, sitemap):
         """Scans a sitemap and returns all pages exposed by the sitemap (if they can be crawled)"""
@@ -162,7 +201,7 @@ class Crawler():
 
         # get all sitemaps from website
         sitemaps = self.get_sitemaps(url)
-        time.sleep(self.robot_delay) # to respect politeness
+        time.sleep(self.__robot_delay) # to respect politeness
 
         if sitemaps:
             result_urls = set()
@@ -175,7 +214,8 @@ class Crawler():
                 
                 # add newly found pages to result
                 result_urls = result_urls.union(set(cleaned_urls))
-            return list(result_urls)
+
+            return True, list(result_urls)
         
         return False, []
     
@@ -195,11 +235,11 @@ class Crawler():
         tested_urls = 0
 
         # get list of ok urls of max(len) = self.max_urls_per_page 
-        while len(ok_urls)<self.max_urls_per_page and tested_urls<len(all_urls):
+        while len(ok_urls)<self.__max_urls_per_page and tested_urls<len(all_urls):
             print(all_urls[tested_urls])
             if self.is_crawlable(all_urls[tested_urls]):
                 ok_urls.append(all_urls[tested_urls])
-                time.sleep(self.robot_delay)
+                time.sleep(self.__robot_delay)
             tested_urls+=1
 
         return ok_urls
