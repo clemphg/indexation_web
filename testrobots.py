@@ -16,6 +16,7 @@ def test_robotfileparser(url):
 
     parsed_url = urlparse(url)
     home_page_url = parsed_url.scheme+'://'+parsed_url.netloc+'/'
+    print("URL:", url)
     print("Home page url:", home_page_url)
 
     rp = RobotFileParser()
@@ -42,7 +43,11 @@ def test_protego(url):
 
 li = [
     "https://www.linkedin.com/school/ecole-nationale-de-la-statistique-et-de-l'analyse-de-l'information/",
-    "https://ensai.fr/"
+    "https://ensai.fr/",
+    "https://twitter.com/ensai35?lang=fr",
+    "https://www.facebook.com/Ensai35/",
+    "https://ensai.fr/actu-et-evenements/",
+    "https://www.instagram.com/ensai_rennes/"
 ]
 
 for url in li:
