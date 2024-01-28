@@ -57,9 +57,12 @@ class Crawler():
         -------
         None
         """
-        # remove content of destination text file
-        open(os.path.join(path,filename), "w", encoding='utf-8').close()
-
+        if filename in os.listdir(path):
+            # remove content of destination text file
+            open(os.path.join(path,filename), "w", encoding='utf-8').close()
+        else:
+            with open(os.path.join(path,filename), "w", encoding='utf-8') as file:
+                pass
         # write urls in file
         with open(os.path.join(path,filename), 'a') as file:
             for url in urls:
@@ -97,7 +100,7 @@ class Crawler():
             print(f"Error opening the URL: {e}")
             return False, []
         except TimeoutError:
-            print(f"Timeout occurred. Connection timed out after {self.timeout_seconds} seconds.")
+            print(f"Timeout occurred. Connection timed out after {self.__timeout_delay} seconds.")
             return False, []
 
     
@@ -134,7 +137,7 @@ class Crawler():
             print(f"URLError: {e}")
             return False
 
-    def crawl(self,  path='/', filename='crawled_webpages.txt'):
+    def crawl(self,  path='', filename='crawled_webpages.txt'):
         """Crawls from the given seed (start url).
 
         Parameters
@@ -169,7 +172,9 @@ class Crawler():
                 crawled.add(current_url)
 
             time.sleep(self.__crawl_delay)
-            
+        
+        if len(to_crawl)==0:
+            print("No more links to explore")
         # write results
         self.write_visited_urls(list(crawled), path, filename)
     
@@ -186,15 +191,18 @@ class Crawler():
 
     def scan_sitemap(self, sitemap):
         """Scans a sitemap and returns all pages exposed by the sitemap (if they can be crawled)"""
+        try:
+            with urlopen(sitemap) as response:
+                xml_content = response.read()
 
-        with urlopen(sitemap) as response:
-            xml_content = response.read()
+            soup = BeautifulSoup(xml_content, 'xml')
 
-        soup = BeautifulSoup(xml_content, 'xml')
-
-        urls = [loc.text.strip() for loc in soup.find_all('loc')]
-
-        return urls
+            urls = [loc.text.strip() for loc in soup.find_all('loc') if loc.text.endswith(('.html', '.htm', '/'))]            
+            return urls
+        
+        except URLError as e:
+            print(f"Error fetching sitemap: {e}")
+            return []
 
     def scan_urls_from_sitemap(self, url):
         """Get urls of pages exposed by sitemaps for the whole website"""

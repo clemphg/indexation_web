@@ -114,7 +114,7 @@ class MinimalCrawler():
             print(f"Error opening the URL: {e}")
             return False, []
         except TimeoutError:
-            print(f"Timeout occurred. Connection timed out after {self.timeout_seconds} seconds.")
+            print(f"Timeout occurred. Connection timed out after {self.__timeout_delay} seconds.")
             return False, []
 
     def __is_crawlable(self, page_url):
