@@ -1,20 +1,27 @@
-
+"""
+Crawler with MinimalCrawler components + bonuses
+"""
 import os
 import time
 
-from bs4 import BeautifulSoup
-
 from urllib.request import urlopen
-from urllib.error import URLError
+from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 
-from urllib.parse import urlparse
-import http.client
+from bs4 import BeautifulSoup
 
+from urllib.error import URLError
+from http.client import BadStatusLine, IncompleteRead
 
 class Crawler():
 
-    def __init__(self, start_url, max_urls_crawled=50, max_urls_per_page=5, crawl_delay=5, robot_delay=3, timeout_delay=5):
+    def __init__(self, 
+                 start_url, 
+                 max_urls_crawled=50, 
+                 max_urls_per_page=5, 
+                 crawl_delay=5, 
+                 robot_delay=3, 
+                 timeout_delay=5):
         """
         Attributes
         ----------
@@ -84,23 +91,34 @@ class Crawler():
             If first element is False, then the results list is empty
         """
         try:
-
             with urlopen(page_url, timeout=self.__timeout_delay) as response:
-                html = response.read()
+                content = b''
+                while True:
+                    chunk = response.read(8192)
+                    if not chunk:
+                        break
+                    content += chunk
+
+                html = content
             soup = BeautifulSoup(html, 'html.parser')
 
             # list all outgoing links from page and remove duplicates
-            outgoing_links = [a['href'] for a in soup.find_all('a', href=True) if a['href'].startswith('http') and ' ' not in a['href']] # dont consider # (section) and other formats (tel etc)
+            # dont consider '#' (section) and other formats (tel etc)
+            outgoing_links = [a['href'] for a in soup.find_all('a', href=True) 
+                              if a['href'].startswith('http') and ' ' not in a['href']]
             outgoing_links = list(set(outgoing_links))
 
             return True, outgoing_links
-
 
         except URLError as e:
             print(f"Error opening the URL: {e}")
             return False, []
         except TimeoutError:
             print(f"Timeout occurred. Connection timed out after {self.__timeout_delay} seconds.")
+            return False, []
+        except IncompleteRead as e:
+            print(f"IncompleteRead error: {e}")
+            # Handle the error by retrying the request or any other appropriate action
             return False, []
 
     
@@ -130,7 +148,7 @@ class Crawler():
                 rp.read()
                 # returns True if page is crawlable, False otherwise
                 return rp.can_fetch("*", page_url)
-            except http.client.BadStatusLine as e:
+            except BadStatusLine as e:
                 print(f"BadStatusLine error: {e}")
                 return False
         except URLError as e:
@@ -166,6 +184,7 @@ class Crawler():
                 print("Page already crawled. Moving on...")
                 continue
 
+            # get all 
             outgoing_links = self.get_links_one_page(current_url)
             if outgoing_links:
                 to_crawl.extend(outgoing_links)
@@ -179,7 +198,18 @@ class Crawler():
         self.write_visited_urls(list(crawled), path, filename)
     
     def get_sitemaps(self, url):
-        """Get sitemaps from a website, returns None if not sitemap is exposed"""
+        """Get sitemaps from a website, returns None if not sitemap is exposed
+
+        Parameters
+        ----------
+        url: str
+            Website URL.
+        
+        Returns
+        -------
+        list[str]
+            List of sitemaps of the website, None if there are no sitemaps.
+        """
 
         parsed_url = urlparse(url)
         home_page_url = parsed_url.scheme+'://'+parsed_url.netloc
@@ -190,7 +220,18 @@ class Crawler():
         return rp.site_maps() # None if no sitemaps
 
     def scan_sitemap(self, sitemap):
-        """Scans a sitemap and returns all pages exposed by the sitemap (if they can be crawled)"""
+        """Scans a sitemap and returns all pages exposed by the sitemap (if they can be crawled)
+
+        Parameters
+        ----------
+        sitemap: str
+            URL of a sitemap
+        
+        Returns
+        -------
+        list[str]
+            List of URLs of html pages exposed in the sitemap, empty list if error raised.
+        """
         try:
             with urlopen(sitemap) as response:
                 xml_content = response.read()
@@ -205,32 +246,71 @@ class Crawler():
             return []
 
     def scan_urls_from_sitemap(self, url):
-        """Get urls of pages exposed by sitemaps for the whole website"""
+        """Get urls of pages exposed by sitemaps for the whole website
 
-        # get all sitemaps from website
-        sitemaps = self.get_sitemaps(url)
-        time.sleep(self.__robot_delay) # to respect politeness
-
-        if sitemaps:
-            result_urls = set()
-
-            for sitemap in sitemaps:
-                urls = self.scan_sitemap(sitemap)
-
-                # remove previously scanned sitemaps from urls
-                cleaned_urls = [url for url in urls if url not in sitemaps and url.startswith('http') and ' ' not in url]
-                
-                # add newly found pages to result
-                result_urls = result_urls.union(set(cleaned_urls))
-
-            return True, list(result_urls)
+        Parameters
+        ----------
+        urls: list[str]
+            Url of website.
         
-        return False, []
+        Returns
+        -------
+        list[str]
+            List of all exposed URLs in the website.
+        """
+        try:
+            # get all sitemaps from website
+            sitemaps = self.get_sitemaps(url)
+            time.sleep(self.__robot_delay) 
+
+
+            parsed_url = urlparse(url)
+            home_page_url = parsed_url.scheme+'://'+parsed_url.netloc
+
+            # instanciating the robots.txt file parser
+            rp = RobotFileParser()
+            rp.set_url(os.path.join(home_page_url, "robots.txt"))
+
+            if sitemaps:
+                result_urls = set()
+
+                for sitemap in sitemaps:
+                    urls = self.scan_sitemap(sitemap)
+
+                    # remove previously scanned sitemaps from urls
+                    cleaned_urls = [url for url in urls if url not in sitemaps and url.startswith('http') and ' ' not in url]
+
+                    # only keep urls which can be crawled
+                    cleaned_urls_ok = [url for url in cleaned_urls if rp.can_fetch('*', url)]
+                    
+                    # add newly found pages to result
+                    result_urls = result_urls.union(set(cleaned_urls_ok))
+
+                return True, list(result_urls)
+            return False, []
+            
+        except URLError as e:
+            print(f"URLError: {e}")
+            return False, []
     
     def get_links_one_page(self, url):
+        """Get list of URL to add to the frontier from the url given.
 
-        sitemap_urls = self.scan_urls_from_sitemap(url)[1]
-        page_outgoing_urls = self.scan_links_in_page(url)[1]
+        Adds up to self.__max_urls_per_page
+
+        Parameters
+        ----------
+        url: str
+            URL of page to crawl
+        
+        Returns
+        -------
+        list[str]
+            List of URLs to add to the frontier
+        """
+
+        sitemap_urls = self.scan_urls_from_sitemap(url)[1] # can all be crawled
+        page_outgoing_urls = self.scan_links_in_page(url)[1] 
 
         all_urls = list(set(sitemap_urls).union(set(page_outgoing_urls)))
 
@@ -245,7 +325,9 @@ class Crawler():
         # get list of ok urls of max(len) = self.max_urls_per_page 
         while len(ok_urls)<self.__max_urls_per_page and tested_urls<len(all_urls):
             print(all_urls[tested_urls])
-            if self.is_crawlable(all_urls[tested_urls]):
+            if all_urls[tested_urls] in sitemap_urls: # already checked that those are crawlable
+                ok_urls.append(all_urls[tested_urls])
+            elif self.is_crawlable(all_urls[tested_urls]):
                 ok_urls.append(all_urls[tested_urls])
                 time.sleep(self.__robot_delay)
             tested_urls+=1

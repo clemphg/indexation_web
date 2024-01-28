@@ -5,13 +5,14 @@ import os
 import time
 
 from urllib.request import urlopen
-from urllib.error import URLError
-from urllib.robotparser import RobotFileParser
 from urllib.parse import urlparse
+from urllib.robotparser import RobotFileParser
 
 from bs4 import BeautifulSoup
-import http.client
 
+from urllib.error import URLError
+
+from http.client import BadStatusLine
 
 class MinimalCrawler():
 
@@ -142,7 +143,7 @@ class MinimalCrawler():
             rp.read()
             # returns True if page is crawlable, False otherwise
             return rp.can_fetch("*", page_url)
-        except http.client.BadStatusLine as e:
+        except BadStatusLine as e:
             print(f"BadStatusLine error: {e}")
             return False
 
