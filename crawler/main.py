@@ -1,5 +1,6 @@
 
 import argparse
+import time
 
 from minimalcrawler import MinimalCrawler
 from crawler import Crawler
@@ -18,9 +19,12 @@ def main():
     #mincrawler = MinimalCrawler(start_url)
     #mincrawler.crawl(path='crawler', filename='crawled_webpages.txt')
 
-    crawler = Crawler(args.seed, int(args.max_urls_to_crawl))
+    crawler = Crawler(args.seed, int(args.max_urls_to_crawl), 15)
+
+    start_time = time.time()
     crawler.crawl(path='crawler', filename='crawled_webpages3.txt')
 
+    print(f"\n{time.time()-start_time}s")
 
 if __name__=="__main__":
     main()

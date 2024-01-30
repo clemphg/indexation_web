@@ -4,6 +4,7 @@ Crawler with MinimalCrawler components + bonuses
 import os
 import time
 import sqlite3
+import socket
 
 from urllib.request import urlopen
 from urllib.parse import urlparse
@@ -146,11 +147,15 @@ class Crawler():
             rp.set_url(os.path.join(home_page_url, "robots.txt"))
 
             try: 
+                socket.setdefaulttimeout(self.__timeout_delay)
                 rp.read()
                 # returns True if page is crawlable, False otherwise
                 return rp.can_fetch("*", page_url)
             except BadStatusLine as e:
                 print(f"BadStatusLine error: {e}")
+                return False
+            except (URLError, socket.timeout) as e:
+                print(f"Error fetching robots.txt: {e}")
                 return False
         except URLError as e:
             print(f"URLError: {e}")
@@ -379,17 +384,30 @@ class Crawler():
 
     def __db_add_url(self, url, tablename, dbname) -> None:
         """Add url to the database + increases age of urls already in the db"""
+
         con = sqlite3.connect(dbname)
         cur = con.cursor()
 
         try:
+            # update ages of urls already in table
             cur.execute(f"UPDATE {tablename} SET age = age + 1;")
             con.commit()
 
-            # Specify column names and types in the INSERT query
-            query = f"INSERT INTO {tablename} (url, age) VALUES (?, ?);"
-            con.execute(query, (url, 0))
-            con.commit()
+            # check if url is already in table
+            query = f"SELECT COUNT(*) FROM {tablename} WHERE url = ?;"
+            cur.execute(query, (url,))
+            already_in = cur.fetchone()[0]>0
+
+            if not already_in:
+                # insert url into table
+                query = f"INSERT INTO {tablename} (url, age) VALUES (?, ?);"
+                con.execute(query, (url, 0))
+                con.commit()
+            else:
+                # set age to 0 if url was already in table
+                query = f"UPDATE {tablename} SET age = 0 WHERE url = ?;"
+                con.execute(query, (url,))
+                con.commit()
         except Exception as e:
             print(f"Error: {e}")
         finally:
