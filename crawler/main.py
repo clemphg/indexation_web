@@ -2,6 +2,7 @@
 import argparse
 import time
 
+from crawler import MinimalCrawler
 from crawler import Crawler
 
 
@@ -53,26 +54,44 @@ def main():
                         default='webpages_age',
                         help="Name of table in which crawled webpages URLs and their age are saved, default 'webpages_age'.",
                         type=str)
+    parser.add_argument("-c", "--crawler", 
+                        default='normal',
+                        help="Crawler to use, default 'normal' (can be 'normal' or 'minimal').",
+                        type=str,
+                        choices=['minimal', 'normal'])
 
     args = parser.parse_args()
 
     # initalize crawler
-    crawler = Crawler(args.seed, 
-                      args.max_urls_to_crawl,
-                      args.max_urls_per_page,
-                      args.crawl_delay,
-                      args.robot_delay,
-                      args.timeout_delay)
+    if args.crawler == 'minimal':
+        crawler = MinimalCrawler(args.seed, 
+                                 args.max_urls_to_crawl,
+                                 args.max_urls_per_page,
+                                 args.crawl_delay,
+                                 args.robot_delay,
+                                 args.timeout_delay)
+    else:
+        crawler = Crawler(args.seed, 
+                        args.max_urls_to_crawl,
+                        args.max_urls_per_page,
+                        args.crawl_delay,
+                        args.robot_delay,
+                        args.timeout_delay)
     print("---------- Crawler initialized ----------\n")
 
     start_time = time.time()
 
     # crawl (db is intialized before crawling by default)
     print("Starting to crawl...\n")
-    crawler.crawl(args.filename,
-                  args.dbname,
-                  args.tablename,
-                  args.path)
+
+    if args.crawler == 'minimal':
+        crawler.crawl(args.filename,
+                      args.path)
+    else:
+        crawler.crawl(args.filename,
+                      args.dbname,
+                      args.tablename,
+                      args.path)
 
     print(f"\n...crawling took {round(time.time()-start_time,2)}s")
 
