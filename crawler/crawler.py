@@ -50,7 +50,7 @@ class Crawler():
         self.__timeout_delay = timeout_delay # seconds
     
 
-    def write_visited_urls(self, urls, path, filename):
+    def __write_visited_urls(self, urls, path, filename):
         """Writes list of urls into a file
 
         Parameters
@@ -77,7 +77,7 @@ class Crawler():
             for url in urls:
                 file.write(url + '\n')
     
-    def scan_links_in_page(self, page_url):
+    def __scan_links_in_page(self, page_url):
         """Scans page for outgoing links
         
         Parameter
@@ -124,7 +124,7 @@ class Crawler():
             return False, []
 
     
-    def is_crawlable(self, page_url):
+    def __is_crawlable(self, page_url):
         """Checks if a page can be crawled by interrogating the /robots.txt file of the website.
 
         Parameter
@@ -160,65 +160,8 @@ class Crawler():
         except URLError as e:
             print(f"URLError: {e}")
             return False
-
-    def crawl(self,  
-              path='', 
-              filename='crawled_webpages.txt',
-              dbname='crawled_webpages.db',
-              tablename='webpages_age'):
-        """Crawls from the given seed (start url).
-
-        Parameters
-        ----------
-        path: str
-            Path to folder in which the file will be saved, default = '/'.
-        filename: str
-            Name of file containing the URLs, default = 'crawled_webpages.txt'.
-        dbname: str
-            Name of the database in which to store the ages, default = 'crawled_webpages.db'.
-        tablename: str
-            Name of the table in the datatabase to store the ages, default = 'webpages_age'.
-
-        Returns
-        -------
-        None
-        """
-        # initalise db / ages table
-        tablename = self.__db_create_table(tablename, dbname)
-
-        frontier = [self.__seed]
-        crawled = set() # parsed URLs
-
-        while frontier and len(crawled)<self.__max_urls_crawled:
-
-            # we will crawl the first url from the frontier
-            current_url = frontier.pop(0) 
-
-            print(f"[{len(crawled)+1}/{self.__max_urls_crawled}] {current_url}")
-
-            # we do not crawl an already crawled page
-            if current_url in crawled:
-                print("Page already crawled. Moving on...")
-                continue
-
-            # get all 
-            outgoing_links = self.get_links_one_page(current_url)
-
-            if outgoing_links:
-                frontier.extend(outgoing_links)
-                crawled.add(current_url)
-
-                # add crawled url to the database + increment other url's age by 1
-                self.__db_add_url(current_url, tablename, dbname)
-
-            time.sleep(self.__crawl_delay)
-        
-        if len(frontier)==0:
-            print("No more links to explore")
-        # write results
-        self.write_visited_urls(list(crawled), path, filename)
     
-    def get_sitemaps(self, url):
+    def __get_sitemaps(self, url):
         """Get sitemaps from a website, returns None if not sitemap is exposed
 
         Parameters
@@ -240,7 +183,7 @@ class Crawler():
 
         return rp.site_maps() # None if no sitemaps
 
-    def scan_sitemap(self, sitemap):
+    def __scan_sitemap(self, sitemap):
         """Scans a sitemap and returns all pages exposed by the sitemap (if they can be crawled)
 
         Parameters
@@ -281,7 +224,7 @@ class Crawler():
         """
         try:
             # get all sitemaps from website
-            sitemaps = self.get_sitemaps(url)
+            sitemaps = self.__get_sitemaps(url)
             time.sleep(self.__robot_delay) 
 
 
@@ -296,7 +239,7 @@ class Crawler():
                 result_urls = set()
 
                 for sitemap in sitemaps:
-                    urls = self.scan_sitemap(sitemap)
+                    urls = self.__scan_sitemap(sitemap)
 
                     # remove previously scanned sitemaps from urls
                     cleaned_urls = [url for url in urls if url not in sitemaps and url.startswith('http') and ' ' not in url]
@@ -314,7 +257,7 @@ class Crawler():
             print(f"URLError: {e}")
             return False, []
     
-    def get_links_one_page(self, url):
+    def __get_links_one_page(self, url):
         """Get list of URL to add to the frontier from the url given.
 
         Adds up to self.__max_urls_per_page
@@ -329,9 +272,8 @@ class Crawler():
         list[str]
             List of URLs to add to the frontier
         """
-
         sitemap_urls = self.scan_urls_from_sitemap(url)[1] # can all be crawled
-        page_outgoing_urls = self.scan_links_in_page(url)[1] 
+        page_outgoing_urls = self.__scan_links_in_page(url)[1] 
 
         all_urls = list(set(sitemap_urls).union(set(page_outgoing_urls)))
 
@@ -345,19 +287,18 @@ class Crawler():
 
         # get list of ok urls of max(len) = self.max_urls_per_page 
         while len(ok_urls)<self.__max_urls_per_page and tested_urls<len(all_urls):
-            print(all_urls[tested_urls])
             if all_urls[tested_urls] in sitemap_urls: # already checked that those are crawlable
                 ok_urls.append(all_urls[tested_urls])
-            elif self.is_crawlable(all_urls[tested_urls]):
+            elif self.__is_crawlable(all_urls[tested_urls]):
                 ok_urls.append(all_urls[tested_urls])
                 time.sleep(self.__robot_delay)
             tested_urls+=1
 
         return ok_urls
 
-    def __db_create_table(self, tablename='webpages_age', dbname='crawled_webpages.db') -> str:
+    def __db_create_table(self, tablename, dbname, path) -> str:
         """Create table in database"""
-        con = sqlite3.connect(dbname)
+        con = sqlite3.connect(os.path.join(path,dbname))
         cur = con.cursor()
 
         res = cur.execute("SELECT name FROM sqlite_master")
@@ -371,7 +312,7 @@ class Crawler():
             while new_tablename in tablenames:
                 ind += 1
                 new_tablename = tablename + '_' + str(ind)
-            print(f"Table {tablename} already exists in {dbname}. Writing into {new_tablename} instead...")
+            print(f"Table {tablename} already exists in {os.path.join(path,dbname)}. Writing into {new_tablename} instead...\n")
 
         cur.execute(f"CREATE TABLE {new_tablename}(url TEXT, age INTEGER)")  # Specify column names and types
         con.commit()
@@ -382,10 +323,10 @@ class Crawler():
         return new_tablename # in case the tablename changed
 
 
-    def __db_add_url(self, url, tablename, dbname) -> None:
+    def __db_add_url(self, url, tablename, dbname, path) -> None:
         """Add url to the database + increases age of urls already in the db"""
 
-        con = sqlite3.connect(dbname)
+        con = sqlite3.connect(os.path.join(path, dbname))
         cur = con.cursor()
 
         try:
@@ -413,3 +354,56 @@ class Crawler():
         finally:
             cur.close()
             con.close()
+
+    def crawl(self, filename:str, dbname:str, tablename:str, path:str) -> None:
+        """Crawls from the given seed (start url).
+
+        Parameters
+        ----------
+        filename: str
+            Name of file containing the URLs.
+        dbname: str
+            Name of the database in which to store the ages.
+        tablename: str
+            Name of the table in the datatabase to store the ages.
+        path: str
+            Path to folder in which the file will be saved.
+
+        Returns
+        -------
+        None
+        """
+        # initalise db / ages table
+        tablename = self.__db_create_table(tablename, dbname, path)
+
+        frontier = [self.__seed]
+        crawled = set() # parsed URLs
+
+        while frontier and len(crawled)<self.__max_urls_crawled:
+
+            # we will crawl the first url from the frontier
+            current_url = frontier.pop(0) 
+
+            print(f"[{len(crawled)+1}/{self.__max_urls_crawled}] {current_url}")
+
+            # we do not crawl an already crawled page
+            if current_url in crawled:
+                print("Page already crawled. Moving on...")
+                continue
+
+            # get all 
+            outgoing_links = self.__get_links_one_page(current_url)
+
+            if outgoing_links:
+                frontier.extend(outgoing_links)
+                crawled.add(current_url)
+
+                # add crawled url to the database + increment other url's age by 1
+                self.__db_add_url(current_url, tablename, dbname, path)
+
+            time.sleep(self.__crawl_delay)
+        
+        if len(frontier)==0:
+            print("No more links to explore")
+        # write results
+        self.__write_visited_urls(list(crawled), path, filename)
