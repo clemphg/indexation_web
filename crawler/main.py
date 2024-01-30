@@ -4,7 +4,7 @@ import time
 import argparse
 
 from minimalcrawler import MinimalCrawler
-from crawler.crawler import Crawler
+from crawler import Crawler
 
 
 def main():
@@ -98,9 +98,7 @@ def main():
     print(f"\n...crawling took {round(time.time()-start_time,2)}s")
 
 if __name__=="__main__":
-
-    import os
-    print(os.listdir())
+    
     main()
 
 

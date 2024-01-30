@@ -211,7 +211,7 @@ class Crawler():
             print(f"Error fetching sitemap: {e}")
             return []
 
-    def scan_urls_from_sitemap(self, url:str) -> (bool, list[str]):
+    def __scan_urls_from_sitemap(self, url:str) -> (bool, list[str]):
         """Get urls of pages exposed by sitemaps for the whole website
 
         Parameters
@@ -240,7 +240,7 @@ class Crawler():
             if sitemaps:
                 result_urls = set()
 
-                for sitemap in sitemaps:
+                for sitemap in [st for st in sitemaps if st.startswith('http')]:
                     urls = self.__scan_sitemap(sitemap)
 
                     # remove previously scanned sitemaps from urls
@@ -274,7 +274,7 @@ class Crawler():
         list[str]
             List of URLs to add to the frontier, None if no links.
         """
-        sitemap_urls = self.scan_urls_from_sitemap(url)[1] # can all be crawled
+        sitemap_urls = self.__scan_urls_from_sitemap(url)[1] # can all be crawled
         page_outgoing_urls = self.__scan_links_in_page(url)[1] 
 
         all_urls = list(set(sitemap_urls).union(set(page_outgoing_urls)))
