@@ -19,7 +19,7 @@ def main():
     #mincrawler.crawl(path='crawler', filename='crawled_webpages.txt')
 
     crawler = Crawler(args.seed, int(args.max_urls_to_crawl))
-    crawler.crawl(path='crawler', filename='crawled_webpages2.txt')
+    crawler.crawl(path='crawler', filename='crawled_webpages3.txt')
 
 
 if __name__=="__main__":

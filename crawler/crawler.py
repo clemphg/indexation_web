@@ -3,6 +3,7 @@ Crawler with MinimalCrawler components + bonuses
 """
 import os
 import time
+import sqlite3
 
 from urllib.request import urlopen
 from urllib.parse import urlparse
@@ -155,7 +156,11 @@ class Crawler():
             print(f"URLError: {e}")
             return False
 
-    def crawl(self,  path='', filename='crawled_webpages.txt'):
+    def crawl(self,  
+              path='', 
+              filename='crawled_webpages.txt',
+              dbname='crawled_webpages.db',
+              tablename='webpages_age'):
         """Crawls from the given seed (start url).
 
         Parameters
@@ -164,18 +169,25 @@ class Crawler():
             Path to folder in which the file will be saved, default = '/'.
         filename: str
             Name of file containing the URLs, default = 'crawled_webpages.txt'.
+        dbname: str
+            Name of the database in which to store the ages, default = 'crawled_webpages.db'.
+        tablename: str
+            Name of the table in the datatabase to store the ages, default = 'webpages_age'.
 
         Returns
         -------
         None
         """
-        to_crawl = [self.__seed] # frontier
+        # initalise db / ages table
+        tablename = self.__db_create_table(tablename, dbname)
+
+        frontier = [self.__seed]
         crawled = set() # parsed URLs
 
-        while to_crawl and len(crawled)<self.__max_urls_crawled:
+        while frontier and len(crawled)<self.__max_urls_crawled:
 
-            # we will crawl the first url from the to_crawl list (frontier)
-            current_url = to_crawl.pop(0) 
+            # we will crawl the first url from the frontier
+            current_url = frontier.pop(0) 
 
             print(f"[{len(crawled)+1}/{self.__max_urls_crawled}] {current_url}")
 
@@ -186,13 +198,17 @@ class Crawler():
 
             # get all 
             outgoing_links = self.get_links_one_page(current_url)
+
             if outgoing_links:
-                to_crawl.extend(outgoing_links)
+                frontier.extend(outgoing_links)
                 crawled.add(current_url)
+
+                # add crawled url to the database + increment other url's age by 1
+                self.__db_add_url(current_url, tablename, dbname)
 
             time.sleep(self.__crawl_delay)
         
-        if len(to_crawl)==0:
+        if len(frontier)==0:
             print("No more links to explore")
         # write results
         self.write_visited_urls(list(crawled), path, filename)
@@ -334,3 +350,48 @@ class Crawler():
 
         return ok_urls
 
+    def __db_create_table(self, tablename='webpages_age', dbname='crawled_webpages.db') -> str:
+        """Create table in database"""
+        con = sqlite3.connect(dbname)
+        cur = con.cursor()
+
+        res = cur.execute("SELECT name FROM sqlite_master")
+        tablenames = [name[0] for name in res.fetchall()]
+
+        new_tablename = tablename
+
+        if tablename in tablenames:
+            ind = 1
+            new_tablename = tablename + '_' + str(ind)
+            while new_tablename in tablenames:
+                ind += 1
+                new_tablename = tablename + '_' + str(ind)
+            print(f"Table {tablename} already exists in {dbname}. Writing into {new_tablename} instead...")
+
+        cur.execute(f"CREATE TABLE {new_tablename}(url TEXT, age INTEGER)")  # Specify column names and types
+        con.commit()
+
+        cur.close()
+        con.close()
+
+        return new_tablename # in case the tablename changed
+
+
+    def __db_add_url(self, url, tablename, dbname) -> None:
+        """Add url to the database + increases age of urls already in the db"""
+        con = sqlite3.connect(dbname)
+        cur = con.cursor()
+
+        try:
+            cur.execute(f"UPDATE {tablename} SET age = age + 1;")
+            con.commit()
+
+            # Specify column names and types in the INSERT query
+            query = f"INSERT INTO {tablename} (url, age) VALUES (?, ?);"
+            con.execute(query, (url, 0))
+            con.commit()
+        except Exception as e:
+            print(f"Error: {e}")
+        finally:
+            cur.close()
+            con.close()
