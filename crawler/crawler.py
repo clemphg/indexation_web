@@ -3,8 +3,8 @@ Crawler with MinimalCrawler components + bonuses
 """
 import os
 import time
-import sqlite3
 import socket
+import sqlite3
 
 from urllib.request import urlopen
 from urllib.parse import urlparse
@@ -94,6 +94,7 @@ class Crawler():
             If first element is False, then the results list is empty
         """
         try:
+            # parse the page
             with urlopen(page_url, timeout=self.__timeout_delay) as response:
                 content = b''
                 while True:

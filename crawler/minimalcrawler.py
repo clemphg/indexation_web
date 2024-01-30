@@ -3,6 +3,7 @@ Minimal crawler implementation
 """
 import os
 import time
+import socket
 
 from urllib.request import urlopen
 from urllib.parse import urlparse
@@ -16,7 +17,13 @@ from http.client import BadStatusLine
 
 class MinimalCrawler():
 
-    def __init__(self, start_url, max_urls_crawled=50, max_urls_per_page=5, crawl_delay=5, robot_delay=3, timeout_delay=5):
+    def __init__(self, 
+                 start_url:str, 
+                 max_urls_crawled:int=50, 
+                 max_urls_per_page:int=5,
+                 crawl_delay:int=5, 
+                 robot_delay:int=3,
+                 timeout_delay:int=5) -> None:
         """
         Attributes
         ----------
@@ -42,7 +49,7 @@ class MinimalCrawler():
         self.__robot_delay = robot_delay  # seconds
         self.__timeout_delay = timeout_delay # seconds
 
-    def __write_visited_urls(self, urls, path, filename):
+    def __write_visited_urls(self, urls:list[str], path:str, filename:str) -> None:
         """Writes list of urls into a file
 
         Parameters
@@ -58,15 +65,18 @@ class MinimalCrawler():
         -------
         None
         """
-        # remove content of destination text file
-        open(os.path.join(path,filename), "w", encoding='utf-8').close()
-
+        if filename in os.listdir(path):
+            # remove content of destination text file
+            open(os.path.join(path,filename), "w", encoding='utf-8').close()
+        else:
+            with open(os.path.join(path,filename), "w", encoding='utf-8') as file:
+                pass
         # write urls in file
         with open(os.path.join(path,filename), 'a') as file:
             for url in urls:
                 file.write(url + '\n')
 
-    def __scan_links_in_page(self, page_url):
+    def __scan_links_in_page(self, page_url:str) -> (bool, list[str]):
         """Scans page for outgoing links
         Returns self.max_urls_per_page links of less which can be crawled.
 
@@ -83,10 +93,16 @@ class MinimalCrawler():
             If first element is False, then the results list is empty
         """
         try:
-
             # parse the page
             with urlopen(page_url, timeout=self.__timeout_delay) as response:
-                html = response.read()
+                content = b''
+                while True:
+                    chunk = response.read(8192)
+                    if not chunk:
+                        break
+                    content += chunk
+
+                html = content
             soup = BeautifulSoup(html, 'html.parser')
 
             # list all outgoing links from page and remove duplicates
@@ -118,7 +134,7 @@ class MinimalCrawler():
             print(f"Timeout occurred. Connection timed out after {self.__timeout_delay} seconds.")
             return False, []
 
-    def __is_crawlable(self, page_url):
+    def __is_crawlable(self, page_url:str) -> bool:
         """Checks if a page can be crawled by interrogating the /robots.txt file of the website.
 
         Parameter
@@ -131,20 +147,28 @@ class MinimalCrawler():
         boolean
             True if page is crawlable, False otherwise1;
         """
-        # parsing the url to retrieve the home page url
-        parsed_url = urlparse(page_url)
-        home_page_url = parsed_url.scheme+'://'+parsed_url.netloc
+        try:
+            # parsing the url to retrieve the home page url
+            parsed_url = urlparse(page_url)
+            home_page_url = parsed_url.scheme+'://'+parsed_url.netloc
 
-        # instanciating the robots.txt file parser
-        rp = RobotFileParser()
-        rp.set_url(os.path.join(home_page_url, "robots.txt"))
+            # instanciating the robots.txt file parser
+            rp = RobotFileParser()
+            rp.set_url(os.path.join(home_page_url, "robots.txt"))
 
-        try: 
-            rp.read()
-            # returns True if page is crawlable, False otherwise
-            return rp.can_fetch("*", page_url)
-        except BadStatusLine as e:
-            print(f"BadStatusLine error: {e}")
+            try: 
+                socket.setdefaulttimeout(self.__timeout_delay)
+                rp.read()
+                # returns True if page is crawlable, False otherwise
+                return rp.can_fetch("*", page_url)
+            except BadStatusLine as e:
+                print(f"BadStatusLine error: {e}")
+                return False
+            except (URLError, socket.timeout) as e:
+                print(f"Error fetching robots.txt: {e}")
+                return False
+        except URLError as e:
+            print(f"URLError: {e}")
             return False
 
     def crawl(self, filename:str, path:str) -> None:
@@ -161,13 +185,13 @@ class MinimalCrawler():
         -------
         None
         """
-        to_crawl = [self.__seed] # frontier
+        frontier = [self.__seed]
         crawled = set() # parsed URLs
 
-        while to_crawl and len(crawled) < self.__max_urls_crawled:
+        while frontier and len(crawled) < self.__max_urls_crawled:
 
-            # we will crawl the first url from the to_crawl list (frontier)
-            current_url = to_crawl.pop(0)
+            # we will crawl the first url from the frontier
+            current_url = frontier.pop(0)
 
             # some verbose to follow the process
             print(f"[{len(crawled)+1}/{self.__max_urls_crawled}] {current_url}")
@@ -184,7 +208,7 @@ class MinimalCrawler():
                 outgoing_links = response[1]
 
                 # adding new outgoing links to the frontier
-                to_crawl.extend(outgoing_links)
+                frontier.extend(outgoing_links)
 
                 # adding the current url to the list of visited URLs
                 crawled.add(current_url)

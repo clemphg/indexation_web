@@ -56,9 +56,22 @@ Après le constructeur, ce crawler a quatre méthodes, trois privées et une pub
 - `__write_visited_urls(self, urls, path, filename)` : écrit une liste d'URLs dans un fichier dans un dossier spécifié.
 - `__scan_links_in_page(self, page_url)` : parse l'HTML de la page et extrait des liens vers des pages pouvant elles-mêmes être parsées.
 - `__is_crawlable(self, page_url)` : vérifie s'il est possible de parser une page suivant les règles du fichier `robots.txt`.
-- `crawl(self, path='/', filename='crawled_webpages.txt')` : crawl complet, appelle les autres méthodes et s'arrête quand un certain nombre de liens ont été visités ou lorsque la frontier est vide.
+- `crawl(self, filename, path)` : crawl complet, appelle les autres méthodes et s'arrête quand un certain nombre de liens ont été visités ou lorsque la frontier est vide.
 
 ### Objet `Crawler`
+
+### Constructeur
+
+`Crawler` a les mêmes 6 attributs que `MinimalCrawler`. 
+
+### Méthodes
+
+Ce crawler a des méthodes supplémentaires qui permettent la lecture des **sitemaps.xml** des sites web ainsi que la sauvegarde des URLs avec leur âge dans la base de données. Ces méthodes sont les suivantes :
+
+- `__write_visited_urls(self, urls, path, filename)` : écrit une liste d'URLs dans un fichier dans un dossier spécifié.
+- `__scan_links_in_page(self, page_url)` : parse l'HTML de la page et extrait des liens vers des pages pouvant elles-mêmes être parsées.
+- `__is_crawlable(self, page_url)` : vérifie s'il est possible de parser une page suivant les règles du fichier `robots.txt`.
+- `crawl(self, filename, path)` : crawl complet, appelle les autres méthodes et s'arrête quand un certain nombre de liens ont été visités ou lorsque la frontier est vide.
 
 ## Utilisation
 
