@@ -334,7 +334,7 @@ class Crawler():
             print(f"Table {tablename} already exists in {os.path.join(path,dbname)}. Writing into {new_tablename} instead...\n")
 
         # creating the table
-        cur.execute(f"CREATE TABLE {new_tablename}(url TEXT, age INTEGER)")  # Specify column names and types
+        cur.execute(f"CREATE TABLE {new_tablename}(url TEXT PRIMARY KEY, age INTEGER)")  # Specify column names and types
         con.commit()
 
         cur.close()
