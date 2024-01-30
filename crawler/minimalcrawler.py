@@ -10,8 +10,8 @@ from urllib.robotparser import RobotFileParser
 
 from bs4 import BeautifulSoup
 
+# handling errors
 from urllib.error import URLError
-
 from http.client import BadStatusLine
 
 class MinimalCrawler():
@@ -147,7 +147,7 @@ class MinimalCrawler():
             print(f"BadStatusLine error: {e}")
             return False
 
-    def crawl(self, filename:str, path:str):
+    def crawl(self, filename:str, path:str) -> None:
         """Crawls from the given seed (start url).
 
         Parameters

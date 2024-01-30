@@ -12,22 +12,23 @@ from urllib.robotparser import RobotFileParser
 
 from bs4 import BeautifulSoup
 
+# handling errors
 from urllib.error import URLError
 from http.client import BadStatusLine, IncompleteRead
 
 class Crawler():
 
     def __init__(self, 
-                 start_url, 
-                 max_urls_crawled=50, 
-                 max_urls_per_page=5, 
-                 crawl_delay=5, 
-                 robot_delay=3, 
-                 timeout_delay=5):
+                 start_url:str, 
+                 max_urls_crawled:int=50, 
+                 max_urls_per_page:int=5, 
+                 crawl_delay:int=5, 
+                 robot_delay:int=3, 
+                 timeout_delay:int=5) -> None:
         """
         Attributes
         ----------
-        __seed: url
+        __seed: str
             Start url for the crawler
         __max_urls_crawled: int
             Maximum number of distinct urls to crawl
@@ -50,7 +51,7 @@ class Crawler():
         self.__timeout_delay = timeout_delay # seconds
     
 
-    def __write_visited_urls(self, urls, path, filename):
+    def __write_visited_urls(self, urls:list[str], path:str, filename:str) -> None:
         """Writes list of urls into a file
 
         Parameters
@@ -77,7 +78,7 @@ class Crawler():
             for url in urls:
                 file.write(url + '\n')
     
-    def __scan_links_in_page(self, page_url):
+    def __scan_links_in_page(self, page_url:str) -> (bool, list[str]):
         """Scans page for outgoing links
         
         Parameter
@@ -124,7 +125,7 @@ class Crawler():
             return False, []
 
     
-    def __is_crawlable(self, page_url):
+    def __is_crawlable(self, page_url:str) -> bool:
         """Checks if a page can be crawled by interrogating the /robots.txt file of the website.
 
         Parameter
@@ -161,7 +162,7 @@ class Crawler():
             print(f"URLError: {e}")
             return False
     
-    def __get_sitemaps(self, url):
+    def __get_sitemaps(self, url:str) -> (list[str]|None):
         """Get sitemaps from a website, returns None if not sitemap is exposed
 
         Parameters
@@ -183,7 +184,7 @@ class Crawler():
 
         return rp.site_maps() # None if no sitemaps
 
-    def __scan_sitemap(self, sitemap):
+    def __scan_sitemap(self, sitemap:str) -> list[str]:
         """Scans a sitemap and returns all pages exposed by the sitemap (if they can be crawled)
 
         Parameters
@@ -209,7 +210,7 @@ class Crawler():
             print(f"Error fetching sitemap: {e}")
             return []
 
-    def scan_urls_from_sitemap(self, url):
+    def scan_urls_from_sitemap(self, url:str) -> (bool, list[str]):
         """Get urls of pages exposed by sitemaps for the whole website
 
         Parameters
@@ -257,7 +258,7 @@ class Crawler():
             print(f"URLError: {e}")
             return False, []
     
-    def __get_links_one_page(self, url):
+    def __get_links_one_page(self, url:str) -> (list[str]|None):
         """Get list of URL to add to the frontier from the url given.
 
         Adds up to self.__max_urls_per_page
@@ -270,7 +271,7 @@ class Crawler():
         Returns
         -------
         list[str]
-            List of URLs to add to the frontier
+            List of URLs to add to the frontier, None if no links.
         """
         sitemap_urls = self.scan_urls_from_sitemap(url)[1] # can all be crawled
         page_outgoing_urls = self.__scan_links_in_page(url)[1] 
@@ -296,36 +297,66 @@ class Crawler():
 
         return ok_urls
 
-    def __db_create_table(self, tablename, dbname, path) -> str:
-        """Create table in database"""
+    def __db_create_table(self, tablename:str, dbname:str, path:str) -> str:
+        """Create table in database
+        
+        Parameters
+        ----------
+        tablename: str
+            Name of the table to create to store the urls and their age.
+        dbname: str
+            Name of the database.
+        path: str
+            Path of the folder containing the database
+        """
+        # connecting to the db
         con = sqlite3.connect(os.path.join(path,dbname))
         cur = con.cursor()
 
+        # get list of tables in the database
         res = cur.execute("SELECT name FROM sqlite_master")
         tablenames = [name[0] for name in res.fetchall()]
 
+        # useful if table does not already exists
         new_tablename = tablename
 
+        # if table already exists
         if tablename in tablenames:
             ind = 1
             new_tablename = tablename + '_' + str(ind)
+
+            # increase until no table matches the name
             while new_tablename in tablenames:
                 ind += 1
                 new_tablename = tablename + '_' + str(ind)
+            
             print(f"Table {tablename} already exists in {os.path.join(path,dbname)}. Writing into {new_tablename} instead...\n")
 
+        # creating the table
         cur.execute(f"CREATE TABLE {new_tablename}(url TEXT, age INTEGER)")  # Specify column names and types
         con.commit()
 
         cur.close()
         con.close()
 
-        return new_tablename # in case the tablename changed
+        return new_tablename # in case the tablename changed, to insert the urls later on
 
 
-    def __db_add_url(self, url, tablename, dbname, path) -> None:
-        """Add url to the database + increases age of urls already in the db"""
+    def __db_add_url(self, url:str, tablename:str, dbname:str, path:str) -> None:
+        """Add url to the database and increases the age of URLs already in the databse.
 
+        Parameters
+        ----------
+        url: str
+            URL to add to the database.
+        tablename: str
+            Name of the table to create to store the urls and their age.
+        dbname: str
+            Name of the database.
+        path: str
+            Path of the folder containing the database
+        """
+        # connecting to the db
         con = sqlite3.connect(os.path.join(path, dbname))
         cur = con.cursor()
 
@@ -349,6 +380,7 @@ class Crawler():
                 query = f"UPDATE {tablename} SET age = 0 WHERE url = ?;"
                 con.execute(query, (url,))
                 con.commit()
+        
         except Exception as e:
             print(f"Error: {e}")
         finally:
@@ -384,14 +416,16 @@ class Crawler():
             # we will crawl the first url from the frontier
             current_url = frontier.pop(0) 
 
+            # some verbose to follow the process
             print(f"[{len(crawled)+1}/{self.__max_urls_crawled}] {current_url}")
 
-            # we do not crawl an already crawled page
+            # we do not crawl an already crawled page (could be changed later)
             if current_url in crawled:
                 print("Page already crawled. Moving on...")
                 continue
 
-            # get all 
+            # get list of links from page as well as sitemap
+            # this list contains at most self.__max_urls_per_page elements
             outgoing_links = self.__get_links_one_page(current_url)
 
             if outgoing_links:
@@ -404,6 +438,7 @@ class Crawler():
             time.sleep(self.__crawl_delay)
         
         if len(frontier)==0:
-            print("No more links to explore")
+            print("No more links to explore.")
+
         # write results
         self.__write_visited_urls(list(crawled), path, filename)

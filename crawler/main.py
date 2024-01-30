@@ -1,9 +1,10 @@
+"""Main to run crawlers"""
 
-import argparse
 import time
+import argparse
 
-from crawler import MinimalCrawler
-from crawler import Crawler
+from minimalcrawler import MinimalCrawler
+from crawler.crawler import Crawler
 
 
 def main():
@@ -56,7 +57,7 @@ def main():
                         type=str)
     parser.add_argument("-c", "--crawler", 
                         default='normal',
-                        help="Crawler to use, default 'normal' (can be 'normal' or 'minimal').",
+                        help="Crawler to use, default 'normal'.",
                         type=str,
                         choices=['minimal', 'normal'])
 
@@ -72,11 +73,12 @@ def main():
                                  args.timeout_delay)
     else:
         crawler = Crawler(args.seed, 
-                        args.max_urls_to_crawl,
-                        args.max_urls_per_page,
-                        args.crawl_delay,
-                        args.robot_delay,
-                        args.timeout_delay)
+                          args.max_urls_to_crawl,
+                          args.max_urls_per_page,
+                          args.crawl_delay,
+                          args.robot_delay,
+                          args.timeout_delay)
+        
     print("---------- Crawler initialized ----------\n")
 
     start_time = time.time()
@@ -96,5 +98,9 @@ def main():
     print(f"\n...crawling took {round(time.time()-start_time,2)}s")
 
 if __name__=="__main__":
+
+    import os
+    print(os.listdir())
     main()
+
 
