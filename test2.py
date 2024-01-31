@@ -1,6 +1,7 @@
-import json
 
-with open('sample.json') as f:
-    file = json.load(f)
+a = [[1],[2],[1,5,8],[4],[5],[6]]
 
-print(type(file[0]))
+print(a[:-1])
+print(a[1:])
+
+print([min(e1)<min(e2) for e1, e2 in zip(a[:-1], a[1:])])
