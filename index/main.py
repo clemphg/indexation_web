@@ -1,8 +1,15 @@
 """
 main.py
+
+to improve:
+- find better tokenizer
+- select the field on which we should build the index
+- create function which tokenizes the fields title, content and h1
 """
 
 import re
+import argparse
+
 import pandas as pd
 
 # on peut utiliser les librairies qu'on veut pour tokenizer
@@ -15,9 +22,6 @@ def tokenizer(text):
 
 def compute_metadata(data):
     """Computes statistics about the corpus"""
-
-    # nombre de documents
-    print(f"Nombre de documents: {len(data)}")
 
     # nombre de tokens global et par champ
     nb_tokens_titles = [len(title) for title in data['title_tokenized']]
@@ -40,12 +44,12 @@ def compute_metadata(data):
 
     return metadata
 
-def compute_inverted_index(crawled_urls):
+def compute_inverted_index(data):
     """Computes simple inverted index"""
     # initialize simple inverted index dict[token] -> list[docs]
     inv_index = {}
 
-    for idx, row in crawled_urls.iterrows():
+    for idx, row in data.iterrows():
         for token in list(set(row['title_tokenized'])):
             if token in inv_index.keys():
                 inv_index[token].append(idx)
@@ -75,10 +79,26 @@ def save_json(data: dict, filename: str, sort_keys:bool=True) -> None:
 
 def main():
 
-    file = 'crawled_urls.json'
+    # parsing arguments
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-c", "--corpus", 
+                        default='crawled_urls.json', 
+                        help="Filename of corpus to create the index for, default 'crawled_urls.json'.",
+                        type=str)
+    parser.add_argument("-m", "--metadata", 
+                        default='metadata.json', 
+                        help="Filename for metadata about the corpus, default 'metadata.json'.",
+                        type=str)
+    parser.add_argument("-i", "--index", 
+                        default='inverted_index.json', 
+                        help="Filename for the computed inverted index, default 'inverted_index.json'.",
+                        type=str)
+    
+    args = parser.parse_args()
 
     # load data
-    crawled_urls = pd.read_json(file, encoding='utf-8')
+    crawled_urls = pd.read_json(args.corpus, encoding='utf-8')
 
     # tokenize text fields and add them to the dataframe
     crawled_urls['title_tokenized'] = [tokenizer(title) for title in crawled_urls['title']]
@@ -86,12 +106,14 @@ def main():
     crawled_urls['h1_tokenized'] = [tokenizer(h1) for h1 in crawled_urls['h1']]
 
     metadata = compute_metadata(crawled_urls)
-    save_json(metadata, 'metadata.json', sort_keys=False)
+    save_json(metadata, args.metadata, sort_keys=False)
 
     inverted_index = compute_inverted_index(crawled_urls)
-    save_json(inverted_index, 'title.non_pos_index.json')
+    save_json(inverted_index, args.index)
 
 
 if __name__=="__main__":
     
     main()
+
+    # python3 main.py -i title.non_pos_index.json
