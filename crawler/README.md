@@ -132,4 +132,4 @@ options:
   -c {minimal,normal}, --crawler {minimal,normal}
                         Crawler to use, default 'normal'.
 ```
-Les options non disponibles pour le crawler minimal ne seront pas utilisées même si elles sont renseignées.
+Les options non disponibles pour le crawler minimal ne seront pas utilisées même si elles sont renseignées. Celles-ci sont les options relatives à la base de données, soit `--dbname` et `--tablename`.
