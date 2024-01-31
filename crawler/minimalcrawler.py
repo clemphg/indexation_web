@@ -106,8 +106,9 @@ class MinimalCrawler():
             soup = BeautifulSoup(html, 'html.parser')
 
             # list all outgoing links from page and remove duplicates
-            outgoing_links = [a['href'] for a in soup.find_all('a', href=True) if a['href'].startswith(
-                'http') and ' ' not in a['href']]  # dont consider # (section) and other formats (tel etc)
+            outgoing_links = [a['href'] for a in soup.find_all('a', href=True) 
+                              if a['href'].startswith('http') and ' ' not in a['href']
+                              and a['href'].endswith(('.html', '.htm', '/'))]  # dont consider # (section) and other formats (tel etc)
             outgoing_links = list(set(outgoing_links))
 
             # only select a certain number (or less) of crawlable outgoing links

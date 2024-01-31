@@ -109,7 +109,8 @@ class Crawler():
             # list all outgoing links from page and remove duplicates
             # dont consider '#' (section) and other formats (tel etc)
             outgoing_links = [a['href'] for a in soup.find_all('a', href=True) 
-                              if a['href'].startswith('http') and ' ' not in a['href']]
+                              if a['href'].startswith('http') and ' ' not in a['href']
+                              and a['href'].endswith(('.html', '.htm', '/'))]
             outgoing_links = list(set(outgoing_links))
 
             return True, outgoing_links
