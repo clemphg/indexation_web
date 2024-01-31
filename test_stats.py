@@ -17,8 +17,13 @@ def tokenizer(text):
 # nombre de documents
 print(f"Nombre de documents: {len(crawled_urls)}")
 
+# nombre de tokens global et par champ
 
+crawled_urls['title_tokenized'] = [tokenizer(title) for title in crawled_urls['title']]
+crawled_urls['content_tokenized'] = [tokenizer(content) for content in crawled_urls['title']]
+crawled_urls['h1_tokenized'] = [tokenizer(h1) for h1 in crawled_urls['title']]
 
+print(crawled_urls.info())
 
 metadata = {}
 

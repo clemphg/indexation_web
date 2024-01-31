@@ -24,13 +24,13 @@ inv_index = {}
 start_time = time.time()
 for idx, row in crawled_urls.iterrows():
     tokenized_title = tokenizer(row['title'])
-    for token in tokenized_title:
+    for token in list(set(tokenized_title)):
         if token in inv_index.keys():
             inv_index[token].append(idx)
         else:
             inv_index[token] = [idx]
 
-print(f"Index creation time: {round(time.time()-start_time)}s")
+print(f"Index creation time: {round(time.time()-start_time, 2)}s")
 
 # WRITING INVERTED INDEX INTO JSON (with proper indentation)
 file_path = "inverted_index.json"
