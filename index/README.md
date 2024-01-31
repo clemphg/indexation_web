@@ -9,7 +9,15 @@ Ce `README.md` correspond au TP2 sur les index.
 
 Pour faire tourner le code tel qu'expliqué, veuillez vous placer dans le dossier `/index`. 
 
-Pour créer l'index de base demandé, saisir
+Index de base demandé :
 ```
 python3 main.py -i title.non_pos_index.json
 ```
+Index non positionnel avec stemming : 
+```
+python3 main.py -i mon_stemmer.title.non_pos_index.json -s True
+```
+Index positionnel sans stemming :
+```
+python3 main.py -i title.pos_index.json -p True
+``` 

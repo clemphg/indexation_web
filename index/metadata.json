@@ -1,11 +1,11 @@
 {
     "nb_doc": 13550,
-    "nb_tokens_title_total": 149595,
-    "nb_tokens_content_total": 6958432,
-    "nb_tokens_h1_total": 108835,
-    "nb_tokens_total": 7216862,
-    "mean_nb_tokens_title": 11.040221402214023,
-    "mean_nb_tokens_content": 513.5374169741698,
-    "mean_nb_tokens_h1": 8.03210332103321,
-    "mean_nb_tokens_doc": 532.609741697417
+    "nb_tokens_title_total": 168837,
+    "nb_tokens_content_total": 7812613,
+    "nb_tokens_h1_total": 113851,
+    "nb_tokens_total": 8095301,
+    "mean_nb_tokens_title": 12.460295202952029,
+    "mean_nb_tokens_content": 576.5766051660516,
+    "mean_nb_tokens_h1": 8.402287822878229,
+    "mean_nb_tokens_doc": 597.439188191882
 }
