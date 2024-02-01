@@ -3,16 +3,16 @@ Clémentine Phung [clementine.phung-ngoc@eleve.ensai.fr]
 
 This `README.md` refers to lab 2 about indexing.
 
-## Généralités
+## Code
 
-### Librairies
-- **pandas** to store and manipulate the corpus
-- **nltk** to tokenize strings and stem tokens
+### Libraries
+- **pandas** to store and manipulate the corpus.
+- **nltk** to tokenize strings and stem tokens.
 
 ### Functions
 
 - `preprocess(text:str, stem:bool, language:str) -> list[str]`: tokenizes a string and stems it if `stem=True`, in the specified language.
-- `preprocess_data(data:pd.DataFrame, stem:bool, language:str) -> None`: Processes the fields `title`, `content` and `h1` and adds three columns to the dataframe `data` with the preprocessing results.
+- `preprocess_data(data:pd.DataFrame, stem:bool, language:str) -> None`: processes the fields `title`, `content` and `h1` and adds three columns to the dataframe `data` with the preprocessing results.
 - `compute_metadata(data:pd.DataFrame) -> dict`: computes some statistics about the corpus.
 - `compute_inverted_index(data:pd.DataFrame, attribute:str, positional:bool) -> dict`: computes an inverted index on the field `attribute`, which can be positional if `positional=True`.
 - `save_json(data:dict, filename:str, sort_keys:bool=True) -> None`: writes a dictionnary into a JSON file with indents for better readability of the data.

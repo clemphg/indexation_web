@@ -8,17 +8,31 @@ to improve:
 """
 
 import argparse
+import pandas as pd
 
 #import nltk
 #nltk.download('punkt')
-
-import pandas as pd
 from nltk.tokenize import word_tokenize
 from nltk.stem.snowball import SnowballStemmer
 
 
 def preprocess(text:str, stem:bool, language:str) -> list[str]:
-    """Tokenizes and stems text"""
+    """Tokenizes and stems text
+    
+    Parameters
+    ----------
+    test: str
+        String to process
+    stem: bool
+        If True stemming is used, otherwise we only tokenize
+    language: str
+        Language of the corpus, from languages available in nltk
+    
+    Returns
+    -------
+    list[str]
+        List of tokens
+    """
     processed_text = word_tokenize(text, language=language)
     if stem:
         stemmer = SnowballStemmer(language=language)
@@ -26,13 +40,40 @@ def preprocess(text:str, stem:bool, language:str) -> list[str]:
     return processed_text
 
 def preprocess_data(data:pd.DataFrame, stem:bool, language:str) -> None:
+    """Applies preprocessing to columns 'title', 'content' and 'h1' of corpus.
+    
+    Parameters
+    ----------
+    data: pd.DataFrame
+        Corpus
+    stem: bool
+        If True stemming is used, otherwise we only tokenize
+    language: str
+        Language of the corpus, from languages available in nltk
+    
+    Returns
+    -------
+    None
+        The corpus DataFrame is directly modified
+    """
     data['title_preprocessed'] = [preprocess(title, stem, language) for title in data['title']]
     data['content_preprocessed'] = [preprocess(content, stem, language) for content in data['content']]
     data['h1_preprocessed'] = [preprocess(h1, stem, language) for h1 in data['h1']]
 
 
 def compute_metadata(data:pd.DataFrame) -> dict:
-    """Computes statistics about the corpus"""
+    """Computes statistics about the corpus.
+
+    Parameters
+    ----------
+    data: pd.DataFrame
+        Corpus
+    
+    Returns
+    -------
+    dict
+        Keys are the statistics, and values there computed values.
+    """
 
     # nombre de tokens global et par champ
     nb_tokens_titles = [len(title) for title in data['title_preprocessed']]
@@ -56,7 +97,22 @@ def compute_metadata(data:pd.DataFrame) -> dict:
     return metadata
 
 def compute_inverted_index(data:pd.DataFrame, attribute:str, positional:bool) -> dict:
-    """Computes simple inverted index"""
+    """Computes simple inverted index
+
+    Parameters
+    ----------
+    data: pd.DataFrame
+        Corpus
+    attribute: str
+        Field on which the index should be built (either 'title', 'content' or 'h1')
+    positional: bool
+        Whether to compute an inverted index
+    
+    Returns
+    -------
+    dict
+        The computed (positional or not) inverted index, keys are tokens.
+    """
     inv_index = {}
 
     # simple inverted index token: list[docIds]
@@ -84,7 +140,21 @@ def compute_inverted_index(data:pd.DataFrame, attribute:str, positional:bool) ->
 
 
 def save_json(data:dict, filename:str, sort_keys:bool=True) -> None:
-    """Writes data into filename, sorts keys if asked to"""
+    """Writes data into filename, sorts keys if asked to.
+    
+    Parameters
+    ----------
+    data: dict
+        In our case, either metadata info or the inverted index
+    filename: str
+        Name of file in which we should save data
+    sort_keys: bool
+        Whether to sort the data dictionnary by keys
+    
+    Returns
+    -------
+    None
+    """
 
     # generate formatted json string
     json_str = "{\n"
@@ -109,6 +179,7 @@ def save_json(data:dict, filename:str, sort_keys:bool=True) -> None:
     print(f"JSON file saved at: {filename}")
 
 def main() -> None:
+    """Allows to run functions"""
 
     # parsing arguments
     parser = argparse.ArgumentParser()
@@ -132,12 +203,12 @@ def main() -> None:
                         choices=['title', 'content', 'h1']),
     parser.add_argument("-s", "--stemming", 
                         default=False, 
-                        help="Whether or not to stem tokens, default False.",
+                        help="Whether to stem tokens, default False.",
                         type=bool,
                         choices=[True, False]),
     parser.add_argument("-p", "--positional", 
                         default=False, 
-                        help="Whether or not to compute a positional index, default False.",
+                        help="Whether to compute a positional index, default False.",
                         type=bool,
                         choices=[True, False]),
     parser.add_argument("-l", "--language", 
