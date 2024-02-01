@@ -16,7 +16,7 @@ This `README.md` refers to lab 2 about indexing.
 - `compute_metadata(data:pd.DataFrame) -> dict`: computes some statistics about the corpus.
 - `compute_inverted_index(data:pd.DataFrame, attribute:str, positional:bool) -> dict`: computes an inverted index on the field `attribute`, which can be positional if `positional=True`.
 - `save_json(data:dict, filename:str, sort_keys:bool=True) -> None`: writes a dictionnary into a JSON file with indents for better readability of the data.
-- `main() -> None`: parses arguments and runs the other functions to compute the statistics about the corpus and the inverted index.
+- `main() -> None`: parses arguments and runs the other functions to compute statistics about the corpus as well as the inverted index.
 
 ## Use
 
