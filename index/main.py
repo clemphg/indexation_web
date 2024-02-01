@@ -25,19 +25,19 @@ def preprocess(text:str, stem:bool, language:str) -> list[str]:
         processed_text = [stemmer.stem(token) for token in processed_text]
     return processed_text
 
-def process_data(data:pd.DataFrame, stem:bool, language:str):
-    data['title_tokenized'] = [preprocess(title, stem, language) for title in data['title']]
-    data['content_tokenized'] = [preprocess(content, stem, language) for content in data['content']]
-    data['h1_tokenized'] = [preprocess(h1, stem, language) for h1 in data['h1']]
+def preprocess_data(data:pd.DataFrame, stem:bool, language:str) -> None:
+    data['title_preprocessed'] = [preprocess(title, stem, language) for title in data['title']]
+    data['content_preprocessed'] = [preprocess(content, stem, language) for content in data['content']]
+    data['h1_preprocessed'] = [preprocess(h1, stem, language) for h1 in data['h1']]
 
 
 def compute_metadata(data:pd.DataFrame) -> dict:
     """Computes statistics about the corpus"""
 
     # nombre de tokens global et par champ
-    nb_tokens_titles = [len(title) for title in data['title_tokenized']]
-    nb_tokens_contents = [len(content) for content in data['content_tokenized']]
-    nb_tokens_h1s = [len(h1) for h1 in data['h1_tokenized']]
+    nb_tokens_titles = [len(title) for title in data['title_preprocessed']]
+    nb_tokens_contents = [len(content) for content in data['content_preprocessed']]
+    nb_tokens_h1s = [len(h1) for h1 in data['h1_preprocessed']]
 
     nb_tokens_global = sum(nb_tokens_titles)+sum(nb_tokens_contents)+sum(nb_tokens_h1s)
 
@@ -62,7 +62,7 @@ def compute_inverted_index(data:pd.DataFrame, attribute:str, positional:bool) ->
     # simple inverted index token: list[docIds]
     if not positional:
         for idx, row in data.iterrows():
-            for token in list(set(row[attribute+'_tokenized'])):
+            for token in list(set(row[attribute+'_preprocessed'])):
                 if token in inv_index.keys():
                     inv_index[token].append(idx)
                 else:
@@ -71,7 +71,7 @@ def compute_inverted_index(data:pd.DataFrame, attribute:str, positional:bool) ->
     # positional inverted index token: {docId: list[int]}
     else:
         for idx, row in data.iterrows():
-            tokenized = row[attribute+'_tokenized']
+            tokenized = row[attribute+'_preprocessed']
             for i in range(len(tokenized)):
                 if tokenized[i] in inv_index.keys():
                     if idx in inv_index[tokenized[i]].keys():
@@ -148,13 +148,13 @@ def main() -> None:
     
     args = parser.parse_args()
 
-    print(f"Creating an index on {args.attribute} for {args.corpus}...")
+    print(f"Creating a{' positional ' if args.positional else 'n '}inverted index on '{args.attribute}' for {args.corpus}...")
 
     # load data
     crawled_urls = pd.read_json(args.corpus, encoding='utf-8')
 
     # process text fields and add them to the dataframe
-    crawled_urls_tok = preprocess(crawled_urls, args.stemming, args.language)
+    preprocess_data(crawled_urls, args.stemming, args.language)
 
     # compute metadata and save to json
     metadata = compute_metadata(crawled_urls)
@@ -169,6 +169,6 @@ if __name__=="__main__":
     
     main()
 
-    # python3 main.py -i title.non_pos_index.json
-    # python3 main.py -i mon_stemmer.title.non_pos_index.json -s True
-    # python3 main.py -i title.pos_index.json -p True
+    # non positional inverted index              : python3 main.py -i title.non_pos_index.json
+    # non positional inverted index with stemming: python3 main.py -i mon_stemmer.title.non_pos_index.json -s True
+    # positional inverted index                  : python3 main.py -i title.pos_index.json -p True
