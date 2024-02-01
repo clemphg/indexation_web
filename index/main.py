@@ -17,13 +17,18 @@ from nltk.tokenize import word_tokenize
 from nltk.stem.snowball import SnowballStemmer
 
 
-def preprocess(text:str, stem:bool, language:str) -> list:
+def preprocess(text:str, stem:bool, language:str) -> list[str]:
     """Tokenizes and stems text"""
     processed_text = word_tokenize(text, language=language)
     if stem:
         stemmer = SnowballStemmer(language=language)
         processed_text = [stemmer.stem(token) for token in processed_text]
     return processed_text
+
+def process_data(data:pd.DataFrame, stem:bool, language:str):
+    data['title_tokenized'] = [preprocess(title, stem, language) for title in data['title']]
+    data['content_tokenized'] = [preprocess(content, stem, language) for content in data['content']]
+    data['h1_tokenized'] = [preprocess(h1, stem, language) for h1 in data['h1']]
 
 
 def compute_metadata(data:pd.DataFrame) -> dict:
@@ -148,11 +153,8 @@ def main() -> None:
     # load data
     crawled_urls = pd.read_json(args.corpus, encoding='utf-8')
 
-    # tokenize text fields and add them to the dataframe
-    crawled_urls['title_tokenized'] = [preprocess(title, args.stemming, args.language) for title in crawled_urls['title']]
-    crawled_urls['content_tokenized'] = [preprocess(content, args.stemming, args.language) for content in crawled_urls['content']]
-    crawled_urls['h1_tokenized'] = [preprocess(h1, args.stemming, args.language) for h1 in crawled_urls['h1']]
-
+    # process text fields and add them to the dataframe
+    crawled_urls_tok = preprocess(crawled_urls, args.stemming, args.language)
 
     # compute metadata and save to json
     metadata = compute_metadata(crawled_urls)
