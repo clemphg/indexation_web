@@ -1,10 +1,5 @@
 """
 main.py
-
-to improve:
-- find better tokenizer
-- select the field on which we should build the index
-- create function which tokenizes the fields title, content and h1
 """
 
 import argparse
