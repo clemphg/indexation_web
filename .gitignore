@@ -1,2 +1,2 @@
-# Ignore the virtualenv folder
+# Ignore the indexwebenv folder (virtual environment)
 indexwebenv/
