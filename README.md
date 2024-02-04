@@ -1,7 +1,24 @@
-# TP d'indexation web - ENSAI 2024
+# We indexation labs - ENSAI 2024
 Clémentine Phung [clementine.phung-ngoc@eleve.ensai.fr]
 
-Dans les dossiers `./crawler/`, `./index/` et `./ranking/`, vous trouverez un `README.md` correspondant au TP en question.
+This course has three labs, and this repository gathers my work for each of those labs. In the folders `./crawler/`, `./index/` and `./ranking/`, you will find a `README.md` corresponding to the lab in question.
+
+## Setting up
+
+Code is written in `Python 3.10`. All dependencies are listed in `requirements.txt`.
+
+You can set up a virtualenv using 
+```
+python create -m venv my_venv
+```
+Then activate it using
+```
+source my_venv/bin/activate
+```
+Finally, install required packages with
+```
+pip install -r requirements.txt
+```
 
 ## TP1 : Crawler
 ## TP2 : Index
