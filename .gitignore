@@ -1,2 +1,10 @@
 # Ignore the indexwebenv folder (virtual environment)
 indexwebenv/
+
+# Ignore pychache folders
+crawler/__pycache__/
+index/__pycache__/
+ranking/__pycache__/
+
+# Ignore test file
+test.py
