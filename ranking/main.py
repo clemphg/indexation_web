@@ -71,12 +71,12 @@ def linear_ranking(query, filtered_docs, index, weights):
 
         l_positions = []
         for token in query_tokens:
-            if token in index and doc_id in index[token]:
-                positions = index[token][doc_id]['positions']
+            if token in index.keys() and str(doc_id) in index[token]:
+                positions = index[token][str(doc_id)]['positions']
                 l_positions.append(positions)
 
                 # score 3: the closer tokens are to the beginning of a sentence, the bigger the weight
-                importance_feature = sum([1 / math.sqrt(pos) for pos in positions])
+                importance_feature = sum([1 / math.sqrt(pos+1) for pos in positions])
                 score += weights['position'] * importance_feature
         
         # score 4: nb of ordered pairs of tokens
@@ -177,7 +177,7 @@ def main():
     weights = {"num_q_tokens_in_title": 1,
                "prop_tokens": 0.5,
                "position": 1.0,
-               "order": 1}
+               "order": 2}
     ranking = linear_ranking(query, filtered_docs, index_title, weights)
 
     # extract title and url of ranked documents
