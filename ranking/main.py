@@ -19,6 +19,20 @@ def get_stopwords(language: str) -> list[str]:
     lstopwords = set(stopwords.words(language))
     return lstopwords
 
+def compute_metadata(data) -> dict:
+    """Computes statistics about the corpus"""
+
+    # nombre de tokens par titre
+    nb_tokens_titles = [len(tokenize(doc['title'])) for doc in data]
+
+    metadata = {
+        'nb_doc': len(data),
+        'nb_tokens_title_total': sum(nb_tokens_titles),
+        'mean_nb_tokens_title': sum(nb_tokens_titles)/len(data),
+    }
+
+    return metadata
+
 def filter_docs(index:dict, query:str, filter:str) -> list[str]:
     """Filters documents having all of the query's tokens"""
     # maybe use title and content index for more results
@@ -44,7 +58,7 @@ def filter_docs(index:dict, query:str, filter:str) -> list[str]:
             docs = [int(doc) for doc in docs if str(doc) in index[token].keys()]    
     return docs
 
-def linear_ranking(query, filtered_docs, index, weights, language):
+def linear_ranking(query, filtered_docs, index, weights, metadata, language):
     """Ranks documents based on a linear ranking score."""
 
     # tokenize the query
@@ -75,6 +89,7 @@ def linear_ranking(query, filtered_docs, index, weights, language):
         score += weights['prop_tokens'] * num_q_tokens_in_title/num_tokens_in_title
 
         l_positions = []
+        bm25 = 0
         for token in query_tokens:
             if token in index.keys() and str(doc_id) in index[token]:
                 positions = index[token][str(doc_id)]['positions']
@@ -85,8 +100,23 @@ def linear_ranking(query, filtered_docs, index, weights, language):
                 discount = weights['stopwords'] if token in lstopwords else 1
                 pos_score = sum([discount / math.sqrt(pos+1) for pos in positions])
                 score += weights['position'] * pos_score
+
+                # score 4: bm25
+                b= 0.75
+                k1 = 1.2
+                # compute inverse document frequency
+                idf = math.log(metadata['nb_doc']/len(index[token].keys()))
+                # compute the frequency (count) of token in title of doc
+                freq_tok_in_doc = index[token][str(doc_id)]['count']
+                # fieldLen/avg(fieldLen)
+                field_len = len(tokenize(title))
+                avg_field_len = metadata['mean_nb_tokens_title']
+                bm25 += idf*(freq_tok_in_doc*(k1+1))/(freq_tok_in_doc+k1*(1-b+b*field_len/avg_field_len))
+
         
-        # score 4: nb of ordered pairs of tokens
+        score += weights['bm25'] * bm25
+        
+        # score 5: nb of ordered pairs of tokens
         score += weights['order']*sum([min(p1)<min(p2) for p1, p2 in zip(l_positions[:-1], l_positions[1:])])
 
         # store score for the document
@@ -172,6 +202,9 @@ def main():
         documents = json.load(f)
     print(f"Number of documents: {len(documents)}")
 
+    # compute metadata about the corpus
+    metadata = compute_metadata(documents)
+
     # setting the query 
     query = args.query
 
@@ -189,10 +222,16 @@ def main():
                "prop_tokens": 0.5,
                "position": 1.0,
                "order": 2,
-               "stopwords": 0.2}
+               "stopwords": 0.2,
+               "bm25": 1}
 
     # ranking the documents
-    ranking = linear_ranking(query, filtered_docs, index_title, weights, args.language)
+    ranking = linear_ranking(query, 
+                             filtered_docs, 
+                             index_title, 
+                             weights, 
+                             metadata,
+                             args.language)
 
     # extract title and url of ranked documents
     formated_ranking = format_ranking_results(documents, ranking)
