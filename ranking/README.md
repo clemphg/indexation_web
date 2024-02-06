@@ -42,9 +42,9 @@ All score are combined using weights to compute the final score. The weights dic
 weights = {"num_q_tokens_in_title": 1,
            "prop_tokens": 0.5,
            "position": 1.0,
+           "bm25": 1,
            "order": 2,
-           "stopwords": 0.2,
-           "bm25": 1}
+           "stopwords": 0.2}
 ```
 The weight associated to **stopwords** tokens can be set to a value between 0 and 1, 1 being the same weight as non stopwords tokens. This allows to not consider as much stopwords token compared to non stopwords tokens when computing the scores.
 
