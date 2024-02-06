@@ -267,7 +267,7 @@ def save_json(data: list[dict], filename: str) -> None:
 
     print(f"JSON file saved at: {filename}")
 
-def main():
+def main() -> None:
     """Allows to use functions"""
 
     # parsing arguments
