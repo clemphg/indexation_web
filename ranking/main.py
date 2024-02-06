@@ -9,18 +9,52 @@ import argparse
 
 from nltk.corpus import stopwords
 
-def tokenize(text):
-    """Tokenizes a string (lowers+splits by whitespaces)"""
+def tokenize(text: str) -> list[str]:
+    """Tokenizes a string (lowers+splits by whitespaces).
+    
+    Parameter
+    ---------
+    text: str
+        String to tokenize
+    
+    Returns
+    -------
+    list[str]
+        List of tokens
+    """
     text = re.sub(r' +', ' ', text)
     return text.lower().split(' ')
 
 def get_stopwords(language: str) -> list[str]:
-    """Stopwords list of a given language"""
+    """Computes the list of stopwords in a given language
+
+    Parameter
+    ---------
+    language: str
+        Language of the corpus
+    
+    Returns
+    -------
+    list[str]
+        List of stopwords in language
+    """
     lstopwords = set(stopwords.words(language))
     return lstopwords
 
-def compute_metadata(data) -> dict:
-    """Computes statistics about the corpus"""
+def compute_metadata(data: list[dict]) -> dict[str, float]:
+    """Computes statistics about the corpus
+    This is a lighter version of the compute_metadata of lab 2 on indexing.
+
+    Parameter
+    ---------
+    data: list[dict]
+        Corpus, each dictionnary being a document
+    
+    Return
+    ------
+    dict[str, float]
+        Dictionnary containing some statistics about the corpus
+    """
 
     # nombre de tokens par titre
     nb_tokens_titles = [len(tokenize(doc['title'])) for doc in data]
@@ -33,18 +67,31 @@ def compute_metadata(data) -> dict:
 
     return metadata
 
-def filter_docs(index:dict, query:str, filter:str) -> list[str]:
-    """Filters documents having all of the query's tokens"""
-    # maybe use title and content index for more results
-
+def filter_docs(index:dict[str, dict], query:str, filter:str) -> list[int]:
+    """Filters documents having all of the query's tokens
+    
+    Parameters
+    ----------
+    index: dict[str, dict]
+        Positional index, each key is a token and the values are documents in which
+        the token appears, with the positions and the count.
+    query: str
+        Query entered by user
+    filter: str
+        Type of filter to select documents according to whether they contains all of
+        the query's tokens or at least one. Either 'AND' or 'OR'.
+    
+    Returns
+    -------
+    list[int]
+        List of docIds which were filtered.
+    """
     # tokenize the query
     tokenized_query = tokenize(query)
 
     # check if all query tokens are in index
     # if not ignore these tokens
     tokenized_query = [token for token in tokenized_query if token in index.keys()]
-
-    # print info about ignored tokens
 
     if filter=='OR':
         docs = []
@@ -58,9 +105,46 @@ def filter_docs(index:dict, query:str, filter:str) -> list[str]:
             docs = [int(doc) for doc in docs if str(doc) in index[token].keys()]    
     return docs
 
-def linear_ranking(query, filtered_docs, index, weights, metadata, language):
-    """Ranks documents based on a linear ranking score."""
+def linear_ranking(query:str, 
+                   filtered_docs:list[dict], 
+                   index:dict[str, dict], 
+                   weights:dict[str, float],
+                   metadata:dict[str, float],
+                   language:str) -> dict[int, int]:
+    """Ranks documents based on a linear ranking score.
 
+    This score is a weighted sum of four different scores:
+        - one based on the number of query tokens which are in the title
+        - one based on the proportion of title tokens which are query tokens
+        - one based on the position of query tokens in the title
+        - one is the bm25 score
+
+    All score are combined using weights to compute a final score.
+    The weight associated to stopwords tokens can be set to a value between 0 and 1,
+    1 being the same weight as non stopwords tokens. This allows to not consider as 
+    much stopwords token compared to non stopwords tokens.
+
+    Parameters
+    ----------
+    query: str
+        Query entered by user
+    filtered_docs: list[dict]
+        List of documents corresponding to documents selected by the filter
+    index: dict[str, dict]
+        Positional index, each key is a token and the values are documents in which
+        the token appears, with the positions and the count.
+    weights: dict[str, float]
+        Weights associated to each score and stopwords
+    metadata: dict[str, float]
+        Dictionnary of statistics computed about the corpus
+    language: str
+        Language of the corpus (e.g. 'french', 'english',...)
+
+    Returns
+    -------
+    dict[int, int]
+        Dictionnary with keys being the rank and the value the corresponding docId
+    """
     # tokenize the query
     query_tokens = query.lower().split()
 
@@ -128,9 +212,23 @@ def linear_ranking(query, filtered_docs, index, weights, metadata, language):
 
     return ranks
 
-def format_ranking_results(documents, ranking) -> list[dict]:
-    """Formats the ranking results into string for parsed json export"""
-
+def format_ranking_results(documents: list[dict], ranking:dict[int, int]) -> list[dict]:
+    """Create results dictionnary, taking ranked docIds and associating the 
+    corresponding titles and urls.
+    
+    Parameters
+    ----------
+    documents: list[dict]
+        Corpus of documents
+    ranking: dict[int, int]
+        Ranking returned by the linear_ranking function
+    
+    Returns
+    -------
+    list[dict]
+        Ordered list (first element is the document with rank 1) of documents,
+        each document is a dictionnary with its title and its URL.
+    """
     formated_ranking = []
 
     for _, docid in ranking.items():
@@ -141,8 +239,20 @@ def format_ranking_results(documents, ranking) -> list[dict]:
 
     return formated_ranking
 
-def save_json(data: list, filename: str) -> None:
-    """Writes data into filename as a list of dictionnaries"""
+def save_json(data: list[dict], filename: str) -> None:
+    """Writes data into filename as a list of dictionnaries
+    
+    Parameters
+    ----------
+    data: list[dict]
+        Ordered list of ranked documents returned by format_ranking_results
+    filename: str
+        File to which results should be saved
+    
+    Returns
+    -------
+    None
+    """
 
     # generate formatted json string
     json_str = "[\n"
@@ -158,6 +268,7 @@ def save_json(data: list, filename: str) -> None:
     print(f"JSON file saved at: {filename}")
 
 def main():
+    """Allows to use functions"""
 
     # parsing arguments
     parser = argparse.ArgumentParser()
