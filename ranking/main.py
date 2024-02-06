@@ -334,9 +334,10 @@ def main() -> None:
     weights = {"num_q_tokens_in_title": 1,
                "prop_tokens": 0.5,
                "position": 1.0,
+               "bm25": 1,
                "order": 2,
-               "stopwords": 0.2,
-               "bm25": 1}
+               "stopwords": 0.2
+               }
 
     # ranking the documents
     ranking = linear_ranking(query, 
