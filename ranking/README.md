@@ -6,8 +6,9 @@ This `README.md` refers to lab 3 about document ranking. All bonuses where imple
 ## Code
 
 ### Libraries
+- **re** to tokenize by splitting at each whitespaces.
+- **nltk** to get a list of stopwords.
 - **json** to load and dump json files.
-- **nltk** to tokenize strings and stem tokens.
 
 ### Functions
 
