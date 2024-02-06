@@ -1,7 +1,7 @@
 # Lab web indexation [Index] - ENSAI 2024
 Clémentine Phung [clementine.phung-ngoc@eleve.ensai.fr]
 
-This `README.md` refers to lab 2 about indexing.
+This `README.md` refers to lab 2 about indexing. Bonuses 1 (stemming) and 2 (positional index) were implemented, it is also possible to select the field on which we want to build the index (`title`, `content` or `h1`).
 
 ## Code
 
