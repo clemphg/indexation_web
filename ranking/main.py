@@ -118,6 +118,8 @@ def linear_ranking(query:str,
         - one based on the proportion of title tokens which are query tokens
         - one based on the position of query tokens in the title
         - one is the bm25 score
+        - one is based on the number of pairs of adjacent tokens of the query which 
+        are in the same order in the query and the title.
 
     All score are combined using weights to compute a final score.
     The weight associated to stopwords tokens can be set to a value between 0 and 1,
