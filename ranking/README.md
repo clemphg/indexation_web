@@ -1,4 +1,4 @@
-# Lab web ranking [Index] - ENSAI 2024
+# Lab web indexation [Ranking] - ENSAI 2024
 Clémentine Phung [clementine.phung-ngoc@eleve.ensai.fr]
 
 This `README.md` refers to lab 3 about document ranking. All bonuses where implemented.
