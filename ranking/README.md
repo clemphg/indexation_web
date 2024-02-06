@@ -34,7 +34,8 @@ This score is a weighted sum of four different scores:
 - the first one is based on the number of query tokens which are in the title,
 - the second one is based on the proportion of title tokens which are query tokens (the higher the proportion is the higher the score is),
 - the third one is based on the position of query tokens in the title (the closest query tokens are to the beginning of the title, the higher the score is),
-- the last one is the **bm25 score**.
+- the fourth one is the **bm25 score**,
+- the last score is based on the number of pairs of adjacent tokens of the query which are in the same order in the query and the title (e.g. if the query is `'tokenize strings python'` and the title is `'this python function allows to tokenize strings'`, then this score will be 1 since `'tokenize'` is before `'strings'` but `'string'` is not before `'python'` in the title).
 
 All score are combined using weights to compute the final score. The weights dictionnary is set as:
 ```python
