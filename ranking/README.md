@@ -3,6 +3,8 @@ Clémentine Phung [clementine.phung-ngoc@eleve.ensai.fr]
 
 This `README.md` refers to lab 3 about document ranking. All bonuses where implemented.
 
+**Note**: I noticed some documents have exactly the same title and url, with different ids. For instance, documents with ids 4307, 11479 and 11561 all have the same url and title. This means in the final ranking we can get documents which have exactly the same title and url.
+
 ## Code
 
 ### Libraries
