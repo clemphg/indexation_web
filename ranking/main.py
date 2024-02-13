@@ -280,7 +280,7 @@ def main() -> None:
                         type=str)
     parser.add_argument("-f", "--filter",
                         default='AND',
-                        help="filter for the documents according to the query.",
+                        help="filter for the documents according to the query, default 'AND'.",
                         type=str,
                         choices=['AND', 'OR'])
     parser.add_argument("-it", "--index_title", 

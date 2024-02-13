@@ -69,7 +69,7 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -f {AND,OR}, --filter {AND,OR}
-                        filter for the documents according to the query
+                        filter for the documents according to the query, default 'AND'.
   -it INDEX_TITLE, --index_title INDEX_TITLE
                         filename of title positional index, default 'title_pos_index.json'
   -ic INDEX_CONTENT, --index_content INDEX_CONTENT
